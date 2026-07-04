@@ -125,6 +125,10 @@
   #resumeBtn .rt{flex:1;text-align:left}
   #resumeBtn .rt small{display:block;color:var(--dim);font-family:var(--mono);font-size:11px}
   #resumeBtn .go{font-family:var(--disp);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+  #saveTools{display:flex;justify-content:center;gap:16px;margin:0 auto 22px}
+  .stool{background:none;border:none;color:var(--faint);font-family:var(--mono);font-size:11px;
+    letter-spacing:.08em;text-decoration:underline;text-underline-offset:3px}
+  .stool:hover{color:var(--gold)}
 
   #threats{display:flex;flex-direction:column;gap:5px}
   .threat{display:flex;align-items:center;gap:8px;background:rgba(226,59,59,.08);
@@ -209,6 +213,10 @@
     <div><b>Win</b> — every playable nation has a unique specialty. Paint all 39 regions your color to rule the world. Progress auto-saves.</div>
   </div>
   <div id="resumeWrap"><button id="resumeBtn"></button></div>
+  <div id="saveTools">
+    <button class="stool" id="exportBtn">⤓ Export save code</button>
+    <button class="stool" id="importBtn">⤒ Import save code</button>
+  </div>
   <div id="cards"></div>
 </div>
 
@@ -1093,21 +1101,52 @@ function frame(now){
 
 /* ============================== SAVE / LOAD ============================== */
 const SAVE_KEY='worldconquest.save.v2';
+let CAN_SAVE=true;
+try{ localStorage.setItem('__wc_probe','1'); localStorage.removeItem('__wc_probe'); }
+catch(e){ CAN_SAVE=false; }
+function snapshot(){
+  return JSON.stringify({
+    v:2, player:S.player, time:S.time, kills:S.kills, nemesis:S.nemesis,
+    gold:S.gold, age:S.age, upg:S.upg, terr:S.terr,
+    convoys:S.convoys, battles:S.battles, logs:S.logs.slice(0,15),
+  });
+}
+function flashSave(txt){
+  const b=$('saveBtn'); b.textContent=txt;
+  setTimeout(()=>{ b.textContent='Save'; },1200);
+}
 function saveGame(manual){
   if(!S||S.over) return;
+  if(!CAN_SAVE){ if(manual) flashSave('No storage'); return; }
   try{
-    localStorage.setItem(SAVE_KEY,JSON.stringify({
-      v:2, player:S.player, time:S.time, kills:S.kills, nemesis:S.nemesis,
-      gold:S.gold, age:S.age, upg:S.upg, terr:S.terr,
-      convoys:S.convoys, battles:S.battles, logs:S.logs.slice(0,15),
-    }));
-    if(manual){
-      const b=$('saveBtn'); b.textContent='Saved ✓';
-      setTimeout(()=>{ b.textContent='Save'; },1200);
-    }
-  }catch(e){}
+    localStorage.setItem(SAVE_KEY,snapshot());
+    flashSave(manual?'Saved ✓':'✓');
+  }catch(e){ if(manual) flashSave('Failed'); }
+}
+/* export/import — lets players back up a campaign or move it between devices */
+const enc=s=>'WC1.'+btoa(unescape(encodeURIComponent(s)));
+const dec=c=>decodeURIComponent(escape(atob(c.trim().replace(/^WC1\./,''))));
+function exportSave(){
+  const d=(S&&!S.over)?snapshot():(CAN_SAVE?localStorage.getItem(SAVE_KEY):null);
+  if(!d){ alert('No campaign to export yet.'); return; }
+  const code=enc(d);
+  const done=()=>alert('Save code copied to clipboard. Keep it somewhere safe — paste it via "Import save" to restore.');
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(code).then(done,()=>prompt('Copy your save code:',code));
+  else prompt('Copy your save code:',code);
+}
+function importSave(){
+  const code=prompt('Paste your save code:'); if(!code) return;
+  try{
+    const json=dec(code), d=JSON.parse(json);
+    if(d.v!==2||!NAT[d.player]||!d.terr) throw 0;
+    if(CAN_SAVE) localStorage.setItem(SAVE_KEY,json);
+    refreshResume();
+    startGame(d.player,d);
+  }catch(e){ alert('That save code is not valid.'); }
 }
 function loadSave(){
+  if(!CAN_SAVE) return null;
   try{
     const d=JSON.parse(localStorage.getItem(SAVE_KEY));
     return d&&d.v===2&&NAT[d.player]&&d.terr?d:null;
@@ -1132,6 +1171,9 @@ setInterval(()=>saveGame(false),15000);
 window.addEventListener('pagehide',()=>saveGame(false));
 $('saveBtn').addEventListener('click',()=>saveGame(true));
 $('resumeBtn').addEventListener('click',resumeGame);
+$('exportBtn').addEventListener('click',exportSave);
+$('importBtn').addEventListener('click',importSave);
+if(!CAN_SAVE) $('saveBtn').title='Browser storage is blocked in this embedded viewer — use Export save code instead';
 
 /* ============================== SCREENS ============================== */
 function buildSelect(){
@@ -1161,7 +1203,11 @@ function startGame(id,resume){
     S.sel=owned(id).includes(id)?id:(owned(id)[0]||null);
     $('log').innerHTML=S.logs.map(l=>`<div class="e ${l.cls}">${l.text}</div>`).join('');
     logMsg('— campaign resumed —','warn');
+  } else if(CAN_SAVE){
+    logMsg('Progress auto-saves every 15s (Save button up top). Resume anytime from the title screen.','info');
   }
+  if(!CAN_SAVE)
+    logMsg('⚠ This embedded viewer blocks browser storage, so auto-save is off. Play at the game\'s own link to keep progress, or use Export save code on the title screen.','warn');
   computeTargets();
   $('meBox').innerHTML=`<span style="font-size:17px">${NAT[id].flag}</span>
     <b>${NAT[id].name}</b> <span class="spec">${NAT[id].spec}</span>`;
