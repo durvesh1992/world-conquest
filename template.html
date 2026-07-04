@@ -103,13 +103,31 @@
   .qbtn.on{border-color:var(--gold);color:var(--gold)}
   .qbtn:hover{border-color:var(--dim)}
   .qchip .qn{font-family:var(--mono);font-size:9px;color:var(--dim);margin-left:1px}
-  #ageBtn{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--bg);
+  #ageBtn,#nukeBtn{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--bg);
     border:1px solid var(--line);border-radius:5px;padding:8px 10px;color:var(--text);font-size:12.5px;margin-bottom:7px}
-  #ageBtn:hover:not(:disabled){border-color:var(--gold)}
-  #ageBtn:disabled{opacity:.45;cursor:default}
-  #ageBtn .ac{font-family:var(--mono);color:var(--gold);font-size:12px}
-  #ageBtn .an{font-weight:600}
-  #ageBtn .an small{display:block;font-weight:400;color:var(--faint);font-size:10.5px}
+  #ageBtn:hover:not(:disabled),#nukeBtn:hover:not(:disabled){border-color:var(--gold)}
+  #ageBtn:disabled,#nukeBtn:disabled{opacity:.45;cursor:default}
+  #ageBtn .ac,#nukeBtn .ac{font-family:var(--mono);color:var(--gold);font-size:12px}
+  #ageBtn .an,#nukeBtn .an{font-weight:600}
+  #ageBtn .an small,#nukeBtn .an small{display:block;font-weight:400;color:var(--faint);font-size:10.5px}
+  #nukeBtn{margin:7px 0 0}
+  #nukeBtn.armed{border-color:var(--accent);color:var(--accent)}
+  .tbtn.rep.on{border-color:var(--good);color:var(--good)}
+  #ticker{position:absolute;top:10px;left:50%;transform:translateX(-50%);max-width:80%;
+    background:rgba(10,20,32,.88);border:1px solid var(--line);border-radius:4px;
+    padding:5px 14px;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--gold);
+    pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .4s}
+  #ticker.hide{opacity:0}
+  #optRows{max-width:780px;margin:0 auto 20px;display:flex;flex-direction:column;gap:8px}
+  .optRow{display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap}
+  .optRow .ol{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--faint);text-transform:uppercase;width:76px;text-align:right}
+  .ochip{background:var(--panel);border:1px solid var(--line);border-radius:4px;color:var(--dim);
+    font-family:var(--mono);font-size:11.5px;padding:5px 12px}
+  .ochip.on{border-color:var(--gold);color:var(--gold)}
+  .ochip:hover{border-color:var(--dim)}
+  #scenDesc{text-align:center;font-size:11.5px;color:var(--faint);font-family:var(--mono)}
+  #replayCv{border:1px solid var(--line);border-radius:6px;margin:0 auto 8px;display:block;background:#0B1A2E}
+  #replayCap{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--faint);text-transform:uppercase;margin-bottom:14px}
   .urow{display:flex;gap:5px}
   .ubtn{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:6px 4px;
     color:var(--text);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:14px}
@@ -203,16 +221,21 @@
   <div class="head">
     <div class="eyebrow">// Global Command Initiative //</div>
     <h1>World Conquest</h1>
-    <p class="sub">A real world map, 39 regions, 25 great powers. Train forces, launch invasions that cross the map in real time, and watch the borders shift — until only your color remains.</p>
+    <p class="sub">A real world map, 44 regions, 25 great powers. Train forces, launch invasions, drop nukes, choke sea lanes — and watch the borders shift until only your color remains.</p>
   </div>
   <div id="howto">
     <div><b>Build</b> — select your territory and queue Infantry 🪖, Fleets 🚢, Air Wings ✈️. Training takes time; more land means more factories.</div>
     <div><b>Attack</b> — click your territory, then a highlighted neighbor. Your force physically travels there, then the battle rages until one side breaks.</div>
     <div><b>Defend</b> — incoming invasions show up in the Threats panel with who's attacking and where. Reinforce, or hit them back at home.</div>
-    <div><b>Advance</b> — age up your empire and buy unit upgrades to outclass older armies. Train in bulk with ×5 / ×10 / Max, or hotkeys 1 / 2 / 3.</div>
-    <div><b>Win</b> — every playable nation has a unique specialty. Paint all 39 regions your color to rule the world. Progress auto-saves.</div>
+    <div><b>Advance</b> — age up to unlock nukes ☢, raise monuments 🏛, blockade coasts ⚓, and demand tribute 💰. Superpowers span several regions — take them piece by piece.</div>
+    <div><b>Win</b> — capture a nation's capital ★ to steal 40% of its specialty. Paint all 44 regions your color to rule the world. Progress auto-saves.</div>
   </div>
   <div id="resumeWrap"><button id="resumeBtn"></button></div>
+  <div id="optRows">
+    <div class="optRow" id="diffRow"><span class="ol">Difficulty</span></div>
+    <div class="optRow" id="scenRow"><span class="ol">Scenario</span></div>
+    <div id="scenDesc"></div>
+  </div>
   <div id="saveTools">
     <button class="stool" id="exportBtn">⤓ Export save code</button>
     <button class="stool" id="importBtn">⤒ Import save code</button>
@@ -239,6 +262,7 @@
   <div id="main">
     <div id="mapwrap">
       <canvas id="cv"></canvas>
+      <div id="ticker" class="hide"></div>
       <div id="tip"></div>
       <div id="hint">Click one of your territories to issue orders · drag to pan · scroll to zoom</div>
       <div id="zoomctl">
@@ -270,6 +294,7 @@
           <button class="ubtn" id="ub-navy"></button>
           <button class="ubtn" id="ub-air"></button>
         </div>
+        <button id="nukeBtn"></button>
       </div>
       <div class="sec">
         <h3>⚠ Threats</h3>
@@ -305,6 +330,8 @@
   <div id="endBox">
     <h1 id="endTitle"></h1>
     <p id="endStats"></p>
+    <canvas id="replayCv" width="560" height="281"></canvas>
+    <div id="replayCap">Campaign replay — watch the world change hands</div>
     <button id="endRestart">New Campaign</button>
   </div>
 </div>
@@ -377,9 +404,18 @@ const NAT={};
   }
 }
 const PLAYABLE=NATIONS.filter(n=>!n.minor);
+const NIDX={}; NATIONS.forEach((n,i)=>NIDX[n.id]=i);
 
-/* geometry lookups */
-const TG={}; WORLD.terr.forEach(t=>TG[t.id]=t);
+/* geometry + territory metadata (territories ≠ nations: superpowers span several regions) */
+const RNAMES={uswest:'Western US',useast:'Eastern US',canadawest:'Western Canada',canada:'Eastern Canada',
+  russia:'European Russia',siberia:'Siberia',fareast:'Russian Far East',chinawest:'Western China',china:'Eastern China'};
+const TG={}, TMETA={}, CAPOF={};
+WORLD.terr.forEach(t=>{
+  TG[t.id]=t;
+  TMETA[t.id]={name:RNAMES[t.id]||NAT[t.nation].name, flag:NAT[t.nation].flag, nation:t.nation, cap:!!t.cap};
+  if(t.cap) CAPOF[t.nation]=t.id;
+});
+const tName=id=>TMETA[id].name, tFlag=id=>TMETA[id].flag;
 const ADJ={};
 WORLD.adj.forEach(([a,b,t])=>{ (ADJ[a]=ADJ[a]||[]).push({id:b,t}); (ADJ[b]=ADJ[b]||[]).push({id:a,t}); });
 const edgeType=(a,b)=>{ const e=(ADJ[a]||[]).find(x=>x.id===b); return e?e.t:null; };
@@ -398,22 +434,88 @@ const fmt=v=>Math.round(v).toLocaleString('en-US');
 const cnt=t=>({army:Math.round(t.army),navy:Math.round(t.navy),air:Math.round(t.air)});
 const totalUnits=f=>(f.army||0)+(f.navy||0)+(f.air||0);
 
-function newGame(playerId){
-  S={player:playerId, time:0, over:false, paused:false, speed:1, sel:playerId, hover:null,
-     targets:{}, terr:{}, gold:{}, wasAlive:{}, aiNext:{}, convoys:[], battles:{}, fx:[],
-     logs:[], kills:0, nemesis:null, age:{}, upg:{}, bq:1};
+const DIFFS={
+  easy:  {label:'Easy',   ai:0.8,  th:0.15, grace:150, nukes:false},
+  normal:{label:'Normal', ai:1,    th:0,    grace:90,  nukes:true},
+  hard:  {label:'Hard',   ai:1.25, th:-0.1, grace:45,  nukes:true},
+};
+const SCENS={
+  standard:{label:'Standard', desc:'A fractured world. 25 powers, 14 independents.'},
+  coldwar: {label:'Cold War', desc:'A rival superpower already rules half the planet.'},
+  duel:    {label:'Duel',     desc:'You and one rival empire. Everyone else stays home.'},
+  blitz:   {label:'Blitz',    desc:'Everyone starts rich, aged up, and armed. Total war, fast.'},
+};
+let selDiff='normal', selScen='standard';
+
+function newGame(playerId,opts){
+  opts=opts||{};
+  S={player:playerId, time:0, over:false, paused:false, speed:1, hover:null,
+     targets:{}, terr:{}, gold:{}, wasAlive:{}, aiNext:{}, convoys:[], battles:{}, blockades:{}, fx:[],
+     logs:[], news:[], kills:0, nemesis:null, age:{}, upg:{}, bq:1,
+     diff:opts.diff||'normal', scen:opts.scen||'standard',
+     hostile:{}, truce:{}, grudge:{}, tribCd:{}, demand:null,
+     nukes:{}, nukeBuild:{}, armNuke:false, hist:[], histAcc:0, minorized:null};
+  const multi={}; WORLD.terr.forEach(t=>multi[t.nation]=(multi[t.nation]||0)+1);
+  for(const na of NATIONS){
+    S.age[na.id]=1; S.upg[na.id]={army:0,navy:0,air:0}; S.nukes[na.id]=0;
+    S.gold[na.id]=na.minor?150:350;
+    S.wasAlive[na.id]=true;
+    S.aiNext[na.id]=5+Math.random()*6;
+  }
   WORLD.terr.forEach(t=>{
-    S.age[t.id]=1; S.upg[t.id]={army:0,navy:0,air:0};
-    const minor=NAT[t.id].minor;
-    S.terr[t.id]={owner:t.id, army:minor?8+Math.floor(Math.random()*3):12, navy:minor?1:2, air:minor?1:2, queue:[]};
-    S.gold[t.id]=minor?150:350;
-    S.wasAlive[t.id]=true;
-    S.aiNext[t.id]=5+Math.random()*6;
+    const na=NAT[t.nation];
+    const g=na.minor?{army:8+Math.floor(Math.random()*3),navy:1,air:1}
+      :multi[t.nation]>1?{army:10,navy:2,air:2}:{army:12,navy:2,air:2};
+    S.terr[t.id]={owner:t.nation, army:g.army, navy:g.navy, air:g.air, queue:[],
+      monument:false, repeat:null, fallout:0};
   });
+  // ---- scenarios ----
+  if(S.scen==='coldwar'){
+    const rival=playerId==='russia'?'usa':'russia';
+    const rWest=TG[CAPOF[rival]].cx<1000;
+    WORLD.terr.forEach(t=>{
+      if(t.nation===playerId) return;
+      if(t.nation===rival||((t.cx<1000)===rWest)) S.terr[t.id].owner=rival;
+    });
+    S.gold[rival]+=1500;
+    S.hostile[pairKey(playerId,rival)]=1;
+    pushNews(`☢ COLD WAR: ${NAT[rival].flag} ${NAT[rival].name} controls half the world — and it wants yours.`);
+  } else if(S.scen==='duel'){
+    const rivals=PLAYABLE.filter(n=>n.id!==playerId);
+    const rival=rivals[Math.floor(Math.random()*rivals.length)].id;
+    S.minorized={};
+    PLAYABLE.forEach(n=>{ if(n.id!==playerId&&n.id!==rival) S.minorized[n.id]=true; });
+    S.hostile[pairKey(playerId,rival)]=1;
+    pushNews(`⚔ DUEL: ${NAT[rival].flag} ${NAT[rival].name} is your rival. The rest of the world watches.`);
+  } else if(S.scen==='blitz'){
+    for(const na of NATIONS){ S.gold[na.id]=3000; S.age[na.id]=2; }
+    WORLD.terr.forEach(t=>{ const g=S.terr[t.id]; g.army=Math.round(g.army*1.5); g.navy+=1; });
+    pushNews('⚡ BLITZ: every nation starts rich, modern, and mobilized.');
+  }
+  S.sel=CAPOF[playerId];
+  recomputeMods();
   logMsg(`You take command of ${NAT[playerId].flag} ${NAT[playerId].name}. Specialty: ${NAT[playerId].spec}.`,'warn');
-  logMsg('Intelligence: 24 rival powers and 14 independent regions stand between you and the world.','info');
+  logMsg(`${DIFFS[S.diff].label} difficulty · ${SCENS[S.scen].label} scenario. Hold a nation's capital region to gain 40% of its specialty.`,'info');
 }
-const mods=id=>NAT[id].mods;
+const pairKey=(a,b)=>[a,b].sort().join('|');
+const isMinorish=nid=>NAT[nid].minor||(S.minorized&&S.minorized[nid]);
+function recomputeMods(){
+  S.monCount={}; S.effMods={};
+  for(const t of WORLD.terr)
+    if(S.terr[t.id].monument){ const o=S.terr[t.id].owner; S.monCount[o]=(S.monCount[o]||0)+1; }
+  for(const na of NATIONS){
+    const m=Object.assign({},na.mods);
+    for(const t of WORLD.terr){
+      if(!t.cap||t.nation===na.id) continue;
+      if(S.terr[t.id].owner!==na.id) continue;
+      const src=NAT[t.nation]; if(src.minor) continue;
+      for(const k of ['army','navy','air','atk','def','income','costArmy','costNavy','costAir'])
+        m[k]*=1+(src.mods[k]-1)*0.4;
+    }
+    S.effMods[na.id]=m;
+  }
+}
+const mods=id=>(S&&S.effMods&&S.effMods[id])||NAT[id].mods;
 const owned=nid=>Object.keys(S.terr).filter(t=>S.terr[t].owner===nid);
 const aliveNow=nid=>owned(nid).length>0;
 function unitCost(nid,u){
@@ -425,11 +527,27 @@ function power(nid,f,mode){
   let p=(f.army||0)*UNITS.army.str*m.army*(1+.2*up.army)
        +(f.navy||0)*UNITS.navy.str*m.navy*(1+.2*up.navy)
        +(f.air||0)*UNITS.air.str*m.air*(1+.2*up.air);
+  p*=1+0.03*((S&&S.monCount&&S.monCount[nid])||0);   // monuments: +3% each, empire-wide
   return p*ageStr(nid)*(mode==='atk'?m.atk:m.def*1.3);
 }
+function totalPower(nid){
+  let p=0; for(const t of owned(nid)) p+=power(nid,S.terr[t],'atk');
+  return p;
+}
 function incomeOf(nid){
-  let inc=0; for(const t of owned(nid)) inc+=8+(t===nid?10:0);
-  return inc*mods(nid).income*(1+(ageOf(nid)-1)*0.10);
+  let inc=0;
+  for(const t of owned(nid)){
+    const g=S.terr[t];
+    if(g.fallout>S.time) continue;                    // nuclear fallout: no income
+    let ti=8+(TMETA[t].cap&&TMETA[t].nation===nid?10:0);
+    if(g.monument) ti*=1.45;
+    const b=S.blockades[t];
+    if(b&&b.owner!==nid) ti*=0.35;                    // blockaded
+    inc+=ti;
+  }
+  inc*=mods(nid).income*(1+(ageOf(nid)-1)*0.10);
+  if(nid!==S.player&&!NAT[nid].minor) inc*=DIFFS[S.diff].ai;
+  return inc;
 }
 
 /* ============================== SIMULATION ============================== */
@@ -443,9 +561,17 @@ function simulate(dt){
     for(const na of NATIONS)
       if(na.id!==S.player && aliveNow(na.id) && S.time>=S.aiNext[na.id]) aiAct(na.id);
   }
-  // production
+  // production (halted under nuclear fallout)
   for(const tid in S.terr){
     const t=S.terr[tid];
+    if(t.fallout>S.time) continue;
+    if(t.owner===S.player&&t.repeat&&!t.queue.length){    // repeat production
+      const c=unitCost(S.player,t.repeat);
+      if(S.gold[S.player]>=c*2){
+        const bt=btOf(S.player,t.repeat);
+        S.gold[S.player]-=c; t.queue.push({u:t.repeat,rem:bt,total:bt});
+      }
+    }
     if(!t.queue.length) continue;
     const q=t.queue[0]; q.rem-=dt;
     if(q.rem<=0){
@@ -453,6 +579,43 @@ function simulate(dt){
       t.queue.shift();
       if(t.owner===S.player) sfx('build');
     }
+  }
+  // nuclear programs
+  for(const nid in S.nukeBuild){
+    const nb=S.nukeBuild[nid]; if(!nb) continue;
+    nb.rem-=dt;
+    if(nb.rem<=0){
+      S.nukeBuild[nid]=null; S.nukes[nid]=(S.nukes[nid]||0)+1;
+      if(nid===S.player){ sfx('capture'); logMsg('☢ Nuclear warhead ready. Arm it from the Empire panel.','win'); }
+    }
+  }
+  // naval blockades: stationed fleets duel the defender's navy & air wings
+  for(const tid in S.blockades){
+    const b=S.blockades[tid], t=S.terr[tid];
+    if(t.owner===b.owner){ t.navy+=b.navy; delete S.blockades[tid]; continue; }
+    const D=power(t.owner,{army:0,navy:t.navy,air:t.air},'def');
+    const A=power(b.owner,{army:0,navy:b.navy,air:0},'atk');
+    if(D>0.5){
+      b.navy=Math.max(0,b.navy-D*0.010*0.8*dt);
+      const kill=A*0.010*dt, defUnits=t.navy+t.air;
+      if(defUnits>0){
+        const k=Math.min(1,kill/defUnits);
+        t.navy=Math.max(0,t.navy-t.navy*k); t.air=Math.max(0,t.air-t.air*k);
+      }
+    }
+    if(b.navy<0.5){
+      delete S.blockades[tid];
+      pushNews(`⚓ ${NAT[t.owner].flag} ${NAT[t.owner].name} breaks the blockade of ${tName(tid)}.`);
+      if(b.owner===S.player) logMsg(`Our blockade of ${tName(tid)} was destroyed.`,'loss');
+    }
+  }
+  // tribute demand timeout
+  if(S.demand&&S.time>S.demand.until) answerDemand(false);
+  // replay history: snapshot ownership every 5s
+  S.histAcc+=dt;
+  if(S.histAcc>=5){
+    S.histAcc=0;
+    S.hist.push(WORLD.terr.map(t=>NIDX[S.terr[t.id].owner]));
   }
   // convoys
   for(let i=S.convoys.length-1;i>=0;i--){
@@ -468,18 +631,29 @@ function simulate(dt){
     if(totalUnits(t)<0.05){ // captured
       const prev=t.owner;
       t.owner=b.atk; t.army=Math.max(1,b.f.army); t.navy=b.f.navy; t.air=b.f.air;
+      t.repeat=null;
       delete S.battles[tid];
       boom(tid, NAT[b.atk].bright);
+      recomputeMods();
       if(b.atk===S.player){ S.kills++; sfx('capture'); }
       else if(prev===S.player){ S.nemesis=b.atk; sfx('fail'); }
-      logMsg(`${NAT[b.atk].flag} ${NAT[b.atk].name} captures ${NAT[tid].name} from ${NAT[prev].flag} ${NAT[prev].name}!`,
+      logMsg(`${NAT[b.atk].flag} ${NAT[b.atk].name} captures ${tName(tid)} from ${NAT[prev].flag} ${NAT[prev].name}!`,
         b.atk===S.player?'win':prev===S.player?'loss':'info');
-      if(S.wasAlive[prev] && !aliveNow(prev)){ S.wasAlive[prev]=false; logMsg(`💀 ${NAT[prev].flag} ${NAT[prev].name} has fallen.`,'warn'); }
+      pushNews(`${NAT[b.atk].flag} ${NAT[b.atk].name} seizes ${tName(tid)}!`);
+      if(TMETA[tid].cap&&!NAT[TMETA[tid].nation].minor&&TMETA[tid].nation!==b.atk){
+        pushNews(`🏛 ${NAT[b.atk].name} now commands ${NAT[TMETA[tid].nation].name}'s ${NAT[TMETA[tid].nation].spec}!`);
+        if(b.atk===S.player) logMsg(`Capital seized — you gain 40% of "${NAT[TMETA[tid].nation].spec}": ${NAT[TMETA[tid].nation].desc}.`,'win');
+      }
+      if(S.wasAlive[prev] && !aliveNow(prev)){
+        S.wasAlive[prev]=false;
+        logMsg(`💀 ${NAT[prev].flag} ${NAT[prev].name} has fallen.`,'warn');
+        pushNews(`💀 ${NAT[prev].flag} ${NAT[prev].name} has been wiped off the map.`);
+      }
       if(S.sel===tid && b.atk!==S.player && S.terr[tid].owner!==S.player) S.sel=null;
       checkEnd();
     } else if(totalUnits(b.f)<0.05){ // repelled
       delete S.battles[tid];
-      logMsg(`${NAT[t.owner].flag} ${NAT[t.owner].name} repels the ${NAT[b.atk].name} assault on ${NAT[tid].name}.`,
+      logMsg(`${NAT[t.owner].flag} ${NAT[t.owner].name} repels the ${NAT[b.atk].name} assault on ${tName(tid)}.`,
         b.atk===S.player?'loss':t.owner===S.player?'win':'info');
       if(t.owner===S.player) sfx('capture');
     }
@@ -497,7 +671,29 @@ function convoyArrive(c){
   if(c.kind==='return'||c.kind==='move'){
     if(t.owner===c.owner){ t.army+=c.f.army; t.navy+=c.f.navy; t.air+=c.f.air; }
     else if(c.kind==='move') bounce(c);
-    else logMsg(`${NAT[c.owner].name} forces lost — ${NAT[c.to].name} fell before they returned.`,'info');
+    else logMsg(`${NAT[c.owner].name} forces lost — ${tName(c.to)} fell before they returned.`,'info');
+    return;
+  }
+  if(c.kind==='nuke'){
+    if(t.owner===c.owner) return; // target captured mid-flight; warhead wasted
+    const kf=0.78;
+    t.army-=t.army*kf; t.navy-=t.navy*kf; t.air-=t.air*kf;
+    t.fallout=S.time+75;
+    boom(c.to,'#FF5533'); boom(c.to,'#F2B33D'); sfx('strike'); sfx('fail');
+    pushNews(`☢ NUCLEAR STRIKE — ${NAT[c.owner].flag} ${NAT[c.owner].name} nukes ${tName(c.to)}!`);
+    logMsg(`☢ ${NAT[c.owner].flag} ${NAT[c.owner].name} nuclear strike destroys ${Math.round(kf*100)}% of forces in ${tName(c.to)}. Fallout halts the region for 75s.`,
+      c.owner===S.player?'win':t.owner===S.player?'loss':'warn');
+    return;
+  }
+  if(c.kind==='blk'){
+    if(t.owner===c.owner){ t.navy+=c.f.navy; return; }
+    const ex=S.blockades[c.to];
+    if(ex&&ex.owner===c.owner) ex.navy+=c.f.navy;
+    else if(ex){ bounce(c); return; }
+    else S.blockades[c.to]={owner:c.owner,navy:c.f.navy};
+    sfx('shot');
+    pushNews(`⚓ ${NAT[c.owner].flag} ${NAT[c.owner].name} blockades ${tName(c.to)} — its economy is choking.`);
+    if(t.owner===S.player) logMsg(`⚓ ${NAT[c.owner].flag} ${NAT[c.owner].name} is blockading ${tName(c.to)}! Income cut to 35%. Destroy their fleets with navy or air power.`,'loss');
     return;
   }
   if(c.kind==='strike'){
@@ -505,7 +701,7 @@ function convoyArrive(c){
     const kf=A+D>0?Math.min(.8,A/(A+D)*.85):0;
     t.army-=t.army*kf; t.navy-=t.navy*kf; t.air-=t.air*kf;
     boom(c.to,'#F2B33D'); sfx('strike');
-    logMsg(`${NAT[c.owner].flag} ${NAT[c.owner].name} air strike hits ${NAT[c.to].name} — ${Math.round(kf*100)}% of defenders destroyed.`,
+    logMsg(`${NAT[c.owner].flag} ${NAT[c.owner].name} air strike hits ${tName(c.to)} — ${Math.round(kf*100)}% of defenders destroyed.`,
       c.owner===S.player?'win':t.owner===S.player?'loss':'info');
     const back={owner:c.owner,from:c.to,to:c.from,f:{army:0,navy:0,air:c.f.air*.85},kind:'return',
       el:0,dur:c.dur}; S.convoys.push(back);
@@ -521,7 +717,7 @@ function convoyArrive(c){
   }
   S.battles[c.to]={atk:c.owner, f:{army:c.f.army,navy:c.f.navy,air:c.f.air}};
   boom(c.to, NAT[c.owner].bright); sfx('shot');
-  if(t.owner===S.player) logMsg(`⚔ ${NAT[c.owner].flag} ${NAT[c.owner].name} forces have landed in ${NAT[c.to].name}!`,'loss');
+  if(t.owner===S.player) logMsg(`⚔ ${NAT[c.owner].flag} ${NAT[c.owner].name} forces have landed in ${tName(c.to)}!`,'loss');
 }
 function bounce(c){
   if(S.terr[c.from] && S.terr[c.from].owner===c.owner)
@@ -530,11 +726,63 @@ function bounce(c){
 function launch(owner,from,to,f,kind){
   const src=S.terr[from];
   src.army-=f.army; src.navy-=f.navy; src.air-=f.air;
-  const d=dist(from,to), speed=kind==='strike'?130:70;
+  const d=dist(from,to), speed=kind==='strike'?130:kind==='nuke'?200:70;
   S.convoys.push({owner,from,to,f,kind,el:0,dur:Math.max(1.2,d/speed)});
-  if(kind!=='move' && S.terr[to].owner===S.player && owner!==S.player){
+  const tgt=S.terr[to].owner;
+  if(kind!=='move'&&kind!=='return'&&tgt!==owner){
+    const pk=pairKey(owner,tgt);
+    if(S.truce[pk]>S.time){
+      delete S.truce[pk];
+      pushNews(`🕊✂ ${NAT[owner].flag} ${NAT[owner].name} breaks its truce with ${NAT[tgt].flag} ${NAT[tgt].name}!`);
+    }
+    if(!S.hostile[pk]){
+      S.hostile[pk]=1;
+      pushNews(`⚔ ${NAT[owner].flag} ${NAT[owner].name} DECLARES WAR on ${NAT[tgt].flag} ${NAT[tgt].name}!`);
+      if(tgt===S.player) logMsg(`⚔ ${NAT[owner].flag} ${NAT[owner].name} has declared war on you!`,'warn');
+    }
+  }
+  if(kind!=='move' && tgt===S.player && owner!==S.player){
     sfx('alarm');
-    logMsg(`⚠ ${NAT[owner].flag} ${NAT[owner].name} has launched an ${kind==='strike'?'air strike at':'invasion of'} ${NAT[to].name}! Impact in ${Math.round(Math.max(1.2,d/speed))}s.`,'warn');
+    logMsg(`⚠ ${NAT[owner].flag} ${NAT[owner].name} has launched ${kind==='strike'?'an air strike at':kind==='nuke'?'a NUCLEAR MISSILE at':kind==='blk'?'a blockade fleet toward':'an invasion of'} ${tName(to)}! Impact in ${Math.round(Math.max(1.2,d/speed))}s.`,'warn');
+  }
+}
+function pushNews(text){
+  S.news.push(text);
+  if(S.news.length>12) S.news.shift();
+}
+/* tribute demands */
+function demandTribute(){
+  if(!S.sel) return;
+  const target=S.terr[S.sel].owner;
+  if(target===S.player||(S.tribCd[target]||0)>S.time) return;
+  S.tribCd[target]=S.time+90;
+  const my=totalPower(S.player), theirs=totalPower(target);
+  if(my>theirs*1.5){
+    const amt=Math.round(Math.min(S.gold[target],S.gold[target]*0.15+100));
+    S.gold[target]-=amt; S.gold[S.player]+=amt;
+    S.truce[pairKey(S.player,target)]=S.time+90;
+    sfx('capture');
+    logMsg(`💰 ${NAT[target].flag} ${NAT[target].name} pays ${fmt(amt)} gold in tribute. Truce for 90s.`,'win');
+    pushNews(`💰 ${NAT[target].flag} ${NAT[target].name} pays tribute to ${NAT[S.player].flag} ${NAT[S.player].name}.`);
+  } else {
+    S.grudge[pairKey(S.player,target)]=S.time+180;
+    sfx('fail');
+    logMsg(`${NAT[target].flag} ${NAT[target].name} refuses your demand — and won't forget it.`,'loss');
+    pushNews(`${NAT[target].flag} ${NAT[target].name} defies ${NAT[S.player].name}'s tribute demand!`);
+  }
+}
+function answerDemand(pay){
+  const d=S.demand; if(!d) return;
+  S.demand=null;
+  if(pay&&S.gold[S.player]>=d.amount){
+    S.gold[S.player]-=d.amount; S.gold[d.from]+=d.amount;
+    S.truce[pairKey(S.player,d.from)]=S.time+150;
+    logMsg(`You pay ${fmt(d.amount)} gold to ${NAT[d.from].flag} ${NAT[d.from].name}. Truce for 150s.`,'info');
+  } else {
+    S.grudge[pairKey(d.from,S.player)]=S.time+180;
+    S.hostile[pairKey(d.from,S.player)]=1;
+    logMsg(`You refuse ${NAT[d.from].flag} ${NAT[d.from].name}'s demand. Expect retaliation.`,'warn');
+    pushNews(`${NAT[S.player].flag} ${NAT[S.player].name} defies ${NAT[d.from].name}'s ultimatum!`);
   }
 }
 function checkEnd(){
@@ -546,26 +794,56 @@ function checkEnd(){
 
 /* ============================== AI ============================== */
 function aiAct(nid){
-  const na=NAT[nid], m=na.mods, terrs=owned(nid);
-  S.aiNext[nid]=S.time+(na.minor?7+Math.random()*5:4+Math.random()*4);
+  const na=NAT[nid], m=mods(nid), terrs=owned(nid), mini=isMinorish(nid);
+  S.aiNext[nid]=S.time+(mini?7+Math.random()*5:4+Math.random()*4);
   if(!terrs.length) return;
   const frontier=terrs.filter(t=>ADJ[t].some(e=>S.terr[e.id].owner!==nid));
-  const w={army:5*m.army*m.army/m.costArmy, navy:1.3*m.navy*m.navy/m.costNavy, air:na.minor?0.3:1.3*m.air*m.air/m.costAir};
-  // majors invest in ages & upgrades when flush
-  if(!na.minor){
+  const w={army:5*m.army*m.army/m.costArmy, navy:1.3*m.navy*m.navy/m.costNavy, air:mini?0.3:1.3*m.air*m.air/m.costAir};
+  // majors invest in ages, upgrades, monuments & nukes when flush
+  if(!mini){
     const a=ageOf(nid);
     if(a<3&&S.gold[nid]>AGES[a+1].cost+800){
       S.gold[nid]-=AGES[a+1].cost; S.age[nid]=a+1;
       logMsg(`${na.flag} ${na.name} advances to the ${AGES[a+1].name}.`,'info');
+      pushNews(`${na.flag} ${na.name} enters the ${AGES[S.age[nid]].name}.`);
     } else {
       const pref=w.navy>w.army&&w.navy>w.air?'navy':w.air>w.army?'air':'army';
       const lvl=S.upg[nid][pref];
       if(lvl<3&&S.gold[nid]>UPG_COST[lvl]+900){ S.gold[nid]-=UPG_COST[lvl]; S.upg[nid][pref]=lvl+1; }
     }
+    if(S.gold[nid]>2600&&Math.random()<0.15){         // monuments
+      const spot=terrs.find(t=>!S.terr[t].monument&&!frontier.includes(t))||terrs.find(t=>!S.terr[t].monument);
+      if(spot){ S.gold[nid]-=800; S.terr[spot].monument=true; recomputeMods();
+        pushNews(`🏛 ${na.flag} ${na.name} completes a great monument in ${tName(spot)}.`); }
+    }
+    if(DIFFS[S.diff].nukes&&ageOf(nid)>=3){           // nuclear program
+      if(!S.nukeBuild[nid]&&S.nukes[nid]<2&&S.gold[nid]>3300){
+        S.gold[nid]-=2500; S.nukeBuild[nid]={rem:45,total:45};
+      }
+      if(S.nukes[nid]>0&&Math.random()<0.15){
+        let tgt=null,best=0;
+        for(const t of WORLD.terr){
+          const o=S.terr[t.id].owner;
+          if(o===nid||!S.hostile[pairKey(nid,o)]||S.truce[pairKey(nid,o)]>S.time) continue;
+          const P=power(o,S.terr[t.id],'def');
+          if(P>best){ best=P; tgt=t.id; }
+        }
+        if(tgt){ S.nukes[nid]--; launch(nid,CAPOF[nid]&&S.terr[CAPOF[nid]].owner===nid?CAPOF[nid]:terrs[0],tgt,{army:0,navy:0,air:0},'nuke'); }
+      }
+    }
+    // tribute demand aimed at the player
+    if(!S.demand&&S.time>150&&aliveNow(S.player)&&Math.random()<0.05
+       &&S.truce[pairKey(nid,S.player)]<=S.time
+       &&totalPower(nid)>1.8*totalPower(S.player)){
+      S.demand={from:nid, amount:Math.round(120+S.gold[S.player]*0.2), until:S.time+25};
+      sfx('alarm');
+      logMsg(`💰 ${na.flag} ${na.name} demands ${fmt(S.demand.amount)} gold in tribute — answer in the Threats panel!`,'warn');
+      pushNews(`💰 ${na.flag} ${na.name} issues an ultimatum to ${NAT[S.player].flag} ${NAT[S.player].name}.`);
+    }
   }
   let spots;
-  if(na.minor){
-    spots=totalUnits(S.terr[nid])<18?[nid]:[];
+  if(mini){
+    spots=terrs.filter(t=>totalUnits(S.terr[t])<18).slice(0,1);
   } else {
     // stage where the weakest enemy is next door
     let stage=null,weakest=1e9;
@@ -580,7 +858,7 @@ function aiAct(nid){
   }
   for(const at of spots){
     let guard=0;
-    const qcap=na.minor?1:3;
+    const qcap=mini?1:3;
     while(S.terr[at].queue.length<qcap && guard++<4){
       const tot=w.army+w.navy+w.air; let r=Math.random()*tot, u='army';
       if(r>w.army) u=r>w.army+w.navy?'air':'navy';
@@ -594,15 +872,16 @@ function aiAct(nid){
   // attack
   const myConvoys=S.convoys.filter(c=>c.owner===nid&&c.kind!=='return').length;
   if(myConvoys<3){
-    const thresh=(na.minor?2.2:Math.max(1.05,1.45-S.time*0.0012));
+    const thresh=(mini?2.2:Math.max(1.05,1.45-S.time*0.0012))+DIFFS[S.diff].th;
     let best=null;
     for(const t of terrs){
       const g=S.terr[t];
       for(const e of ADJ[t]){
         const dt2=S.terr[e.id];
         if(dt2.owner===nid) continue;
-        if(dt2.owner===S.player && S.time<90) continue;          // early-game grace period
-        if(na.minor && S.time<240) continue;
+        if(dt2.owner===S.player && S.time<DIFFS[S.diff].grace) continue;  // early-game grace period
+        if(mini && S.time<240) continue;
+        if(S.truce[pairKey(nid,dt2.owner)]>S.time) continue;              // honor truces
         const f={army:Math.floor(g.army*.75),navy:Math.floor(g.navy*.75),air:Math.floor(g.air*.75)};
         if(e.t==='S'&&f.navy<1) continue;
         if(e.t==='L') f.navy=0;
@@ -611,12 +890,31 @@ function aiAct(nid){
         const defF=b&&b.atk===nid?{army:dt2.army*.5,navy:dt2.navy,air:dt2.air}:dt2;
         const A=power(nid,f,'atk'), D=power(dt2.owner,defF,'def');
         // early game: expand into independents first, hesitate against great powers
-        const need=(!NAT[dt2.owner].minor&&S.time<300)?thresh*1.3:thresh;
+        let need=(!isMinorish(dt2.owner)&&S.time<300)?thresh*1.3:thresh;
+        if(S.grudge[pairKey(nid,dt2.owner)]>S.time) need*=0.7;            // grudges make them reckless
         const ratio=A/Math.max(D,1);
-        if(ratio>need&&(!best||ratio>best.ratio)) best={src:t,dst:e.id,f,ratio};
+        if(ratio>need&&(!best||ratio>best.ratio)) best={src:t,dst:e.id,f,ratio,owner:dt2.owner};
       }
     }
-    if(best) launch(nid,best.src,best.dst,best.f,'attack');
+    if(best){
+      const pk=pairKey(nid,best.owner);
+      if(!S.hostile[pk]){
+        // declare war first; the invasion follows on the next act — a warning window
+        S.hostile[pk]=1;
+        pushNews(`⚔ ${na.flag} ${na.name} DECLARES WAR on ${NAT[best.owner].flag} ${NAT[best.owner].name}!`);
+        if(best.owner===S.player){ sfx('alarm'); logMsg(`⚔ ${na.flag} ${na.name} has declared war on you! Invasion imminent.`,'warn'); }
+        S.aiNext[nid]=S.time+5+Math.random()*4;
+      } else launch(nid,best.src,best.dst,best.f,'attack');
+    } else if(!mini&&m.navy>1.2&&Math.random()<0.25){
+      // navy powers: blockade a rich enemy coast when no invasion is viable
+      for(const t of terrs){
+        const g=S.terr[t];
+        if(g.navy<6) continue;
+        const e=ADJ[t].find(e2=>e2.t==='S'&&S.terr[e2.id].owner!==nid&&!S.blockades[e2.id]
+          &&S.hostile[pairKey(nid,S.terr[e2.id].owner)]&&S.truce[pairKey(nid,S.terr[e2.id].owner)]<=S.time);
+        if(e){ launch(nid,t,e.id,{army:0,navy:Math.floor(g.navy*.7),air:0},'blk'); break; }
+      }
+    }
   }
   // reinforce front
   const interior=terrs.filter(t=>!frontier.includes(t)&&totalUnits(S.terr[t])>5);
@@ -647,9 +945,18 @@ function computeTargets(){
 function clickTerr(id){
   if(!S||S.over) return;
   sfx('click');
+  if(S.armNuke){
+    S.armNuke=false;
+    if(S.terr[id].owner!==S.player&&S.nukes[S.player]>0){
+      S.nukes[S.player]--;
+      const from=S.terr[CAPOF[S.player]]&&S.terr[CAPOF[S.player]].owner===S.player?CAPOF[S.player]:owned(S.player)[0];
+      launch(S.player,from,id,{army:0,navy:0,air:0},'nuke');
+      sfx('strike');
+    }
+    computeTargets(); return;
+  }
   if(S.sel&&S.targets[id]){ openModal(S.sel,id,S.targets[id]); return; }
-  if(S.terr[id].owner===S.player) S.sel=(S.sel===id?null:id);
-  else S.sel=null;
+  S.sel=(S.sel===id?null:id);   // enemy territories can be selected for intel & tribute demands
   computeTargets();
 }
 const QCAP=40;
@@ -697,7 +1004,7 @@ function openModal(src,dst,kind){
   UKEYS.forEach(u=>M.f[u]=M.max[u]);
   const d=dist(src,dst), tt=Math.round(Math.max(1.2,d/(airOnly?130:70)));
   $('mTitle').textContent=kind==='mov'?'Redeploy Forces':airOnly?'Air Strike':'Invade';
-  $('mRoute').textContent=`${NAT[src].flag} ${NAT[src].name.toUpperCase()} → ${NAT[dst].flag} ${NAT[dst].name.toUpperCase()} · ${airOnly?'AIR RANGE':et==='S'?'SEA LANE':'LAND BORDER'} · ~${tt}s TRAVEL`;
+  $('mRoute').textContent=`${tFlag(src)} ${tName(src).toUpperCase()} → ${tFlag(dst)} ${tName(dst).toUpperCase()} · ${airOnly?'AIR RANGE':et==='S'?'SEA LANE':'LAND BORDER'} · ~${tt}s TRAVEL`;
   const sl=$('mSliders'); sl.innerHTML='';
   UKEYS.forEach(u=>{
     if(u==='navy'&&et!=='S') return;
@@ -720,12 +1027,17 @@ function refreshModal(){
   const isMove=M.kind==='mov';
   const seaNeedsNavy=M.et==='S'&&M.f.army>0&&M.f.navy<1;
   const total=M.f.army+M.f.navy+M.f.air;
+  const isBlockade=!isMove&&M.kind!=='air'&&M.et==='S'&&M.f.army===0&&M.f.air===0&&M.f.navy>0;
+  const laneBlocked=M.et==='S'&&S.blockades[M.src]&&S.blockades[M.src].owner!==S.player;
   let note='';
   if(M.kind==='air') note='Air strikes destroy defenders but cannot capture territory.';
+  else if(laneBlocked) note='⚓ Our port is blockaded — sea lanes are closed until the blockade is broken.';
+  else if(isBlockade) note='⚓ Fleet-only force: BLOCKADE — parks off their coast, cutting income to 35% until destroyed.';
   else if(seaNeedsNavy) note='Sea lane: Infantry needs at least one Fleet escort.';
   else if(M.et==='S') note='Sea lane crossing — Fleets carry the force.';
-  if(!isMove&&M.kind!=='air'&&M.f.army===0&&total>0) note='No Infantry — the force cannot capture, only besiege.';
+  else if(!isMove&&M.f.army===0&&total>0) note='No Infantry — the force cannot capture, only besiege.';
   $('mNote').textContent=note;
+  M.isBlockade=isBlockade; M.laneBlocked=laneBlocked;
   if(isMove){ $('odds').style.display='none'; }
   else{
     $('odds').style.display='flex';
@@ -733,24 +1045,51 @@ function refreshModal(){
     const D=power(S.terr[M.dst].owner,S.terr[M.dst],'def');
     $('oPow').textContent=`⚔ ${fmt(A)} vs 🛡 ~${fmt(D)}`;
     const r=A/Math.max(D,1), v=$('oVer');
-    if(M.kind==='air'){ v.textContent='DAMAGE ONLY'; v.style.color='var(--gold)'; }
+    if(M.isBlockade){ v.textContent='BLOCKADE'; v.style.color='var(--sky)'; }
+    else if(M.kind==='air'){ v.textContent='DAMAGE ONLY'; v.style.color='var(--gold)'; }
     else if(r>1.5){ v.textContent='LIKELY WIN'; v.style.color='var(--good)'; }
     else if(r>1.0){ v.textContent='RISKY'; v.style.color='var(--gold)'; }
     else{ v.textContent='SUICIDE'; v.style.color='var(--accent)'; }
   }
-  $('mGo').textContent=isMove?'Move':M.kind==='air'?'Strike':'Launch';
-  $('mGo').disabled=total===0||seaNeedsNavy||(M.kind==='atk'&&M.f.army===0&&M.f.air===0&&M.f.navy===0);
+  $('mGo').textContent=isMove?'Move':M.kind==='air'?'Strike':M.isBlockade?'Blockade':'Launch';
+  $('mGo').disabled=total===0||seaNeedsNavy||M.laneBlocked;
 }
 function closeModal(){ M=null; if(S) S.paused=false; $('modalBack').style.display='none'; }
 $('mCancel').addEventListener('click',closeModal);
 $('modalBack').addEventListener('click',e=>{ if(e.target.id==='modalBack') closeModal(); });
 $('mGo').addEventListener('click',()=>{
   if(!M) return;
-  const {src,dst,f,kind}=M;
-  launch(S.player,src,dst,f,kind==='mov'?'move':kind==='air'?'strike':'attack');
+  const {src,dst,f,kind,isBlockade}=M;
+  launch(S.player,src,dst,f,kind==='mov'?'move':kind==='air'?'strike':isBlockade?'blk':'attack');
   if(kind!=='mov') sfx('shot');
   closeModal(); computeTargets();
 });
+function buildMonument(){
+  const t=S.sel;
+  if(!t||S.terr[t].owner!==S.player||S.terr[t].monument||S.gold[S.player]<800) return;
+  S.gold[S.player]-=800; S.terr[t].monument=true;
+  recomputeMods(); sfx('capture');
+  logMsg(`🏛 Monument raised in ${tName(t)} — +45% income there, +3% strength empire-wide.`,'win');
+  pushNews(`🏛 ${NAT[S.player].flag} ${NAT[S.player].name} completes a great monument in ${tName(t)}.`);
+}
+function toggleRepeat(u){
+  const t=S.sel;
+  if(!t||S.terr[t].owner!==S.player) return;
+  S.terr[t].repeat=S.terr[t].repeat===u?null:u;
+  sfx('click');
+}
+function buyNuke(){
+  if(ageOf(S.player)<3||S.nukeBuild[S.player]||S.gold[S.player]<2500) return;
+  S.gold[S.player]-=2500;
+  S.nukeBuild[S.player]={rem:45,total:45};
+  sfx('build');
+  logMsg('☢ Nuclear program started — warhead ready in 45s.','info');
+}
+function armNukeToggle(){
+  if(S.nukes[S.player]<1) return;
+  S.armNuke=!S.armNuke;
+  sfx('click');
+}
 
 /* ============================== VIEW / CANVAS ============================== */
 const cv=$('cv'), ctx=cv.getContext('2d');
@@ -862,7 +1201,7 @@ function draw(now){
     if(sx<-40||sy<-40||sx>r.width+40||sy>r.height+40) continue;
     const st=S.terr[t.id], c=cnt(st), tot=c.army+c.navy+c.air;
     ctx.font='13px system-ui';
-    ctx.fillText(NAT[t.id].flag,sx,sy-4);
+    ctx.fillText(TMETA[t.id].flag,sx,sy-4);
     ctx.font='600 9px '+'ui-monospace,Menlo,monospace';
     const txt=view.k>0.85?`${c.army}·${c.navy}·${c.air}`:String(tot);
     const tw=ctx.measureText(txt).width+8;
@@ -873,11 +1212,19 @@ function draw(now){
     if(view.k>0.85){
       ctx.font='600 8.5px ui-monospace,Menlo,monospace';
       ctx.fillStyle='rgba(190,210,230,.75)';
-      ctx.fillText(NAT[t.id].name.toUpperCase(),sx,sy+22);
+      ctx.fillText(tName(t.id).toUpperCase(),sx,sy+22);
     }
     if(st.queue.length&&st.owner===S.player){
       ctx.font='9px system-ui'; ctx.fillStyle='#F2B33D';
       ctx.fillText('⚙ '+st.queue.length,sx,sy-16);
+    }
+    if(st.monument){ ctx.font='10px system-ui'; ctx.fillText('🏛',sx-16,sy-4); }
+    if(st.fallout>S.time){ ctx.font='12px system-ui'; ctx.fillText('☢',sx+15,sy-6); }
+    const blk=S.blockades[t.id];
+    if(blk){
+      ctx.font='12px system-ui'; ctx.fillText('⚓',sx,sy+34);
+      ctx.font='600 8px ui-monospace,Menlo,monospace'; ctx.fillStyle=NAT[blk.owner].bright;
+      ctx.fillText(String(Math.ceil(blk.navy)),sx+10,sy+34);
     }
   }
   // battles
@@ -907,8 +1254,8 @@ function draw(now){
     }
     ctx.fillStyle=col; ctx.beginPath(); ctx.arc(sx,sy,5,0,7); ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=1; ctx.stroke();
-    ctx.font='10px system-ui';
-    ctx.fillText(c.kind==='strike'?'✈️':c.kind==='move'||c.kind==='return'?'➜':'⚔️',sx,sy-8);
+    ctx.font=c.kind==='nuke'?'13px system-ui':'10px system-ui';
+    ctx.fillText(c.kind==='nuke'?'☢':c.kind==='strike'?'✈️':c.kind==='blk'?'⚓':c.kind==='move'||c.kind==='return'?'➜':'⚔️',sx,sy-8);
   }
   // fx
   for(const f of S.fx){
@@ -935,16 +1282,18 @@ window.addEventListener('mousemove',e=>{
   S.hover=id;
   const tip=$('tip');
   if(id&&!drag){
-    const st=S.terr[id], na=NAT[id], ow=NAT[st.owner], c=cnt(st);
-    const b=S.battles[id];
+    const st=S.terr[id], tm=TMETA[id], ow=NAT[st.owner], c=cnt(st);
+    const b=S.battles[id], blk=S.blockades[id];
     tip.style.display='block';
     tip.style.left=Math.min(rect.width-240,e.clientX-rect.left+14)+'px';
-    tip.style.top=Math.min(rect.height-120,e.clientY-rect.top+12)+'px';
-    tip.innerHTML=`<div class="tn">${na.flag} ${na.name}</div>
+    tip.style.top=Math.min(rect.height-130,e.clientY-rect.top+12)+'px';
+    tip.innerHTML=`<div class="tn">${tm.flag} ${tName(id)}${st.monument?' 🏛':''}${tm.cap?' ★':''}</div>
       <div class="to" style="color:${ow.bright}">Held by ${ow.name}${st.owner===S.player?' (you)':''}</div>
       <div class="tg">🪖 ${c.army} · 🚢 ${c.navy} · ✈️ ${c.air}${st.queue.length?` · ⚙ ${st.queue.length} in production`:''}</div>
       ${b?`<div class="ts">⚔ Under attack by ${NAT[b.atk].name}</div>`:''}
-      ${!NAT[id].minor?`<div class="ts">${NAT[id].spec}</div>`:''}`;
+      ${blk?`<div class="ts">⚓ Blockaded by ${NAT[blk.owner].name}</div>`:''}
+      ${st.fallout>S.time?`<div class="ts">☢ Fallout — ${Math.ceil(st.fallout-S.time)}s</div>`:''}
+      ${tm.cap&&!NAT[tm.nation].minor?`<div class="ts">★ Capital — grants ${NAT[tm.nation].spec}</div>`:''}`;
   } else tip.style.display='none';
 });
 window.addEventListener('mouseup',e=>{
@@ -994,12 +1343,27 @@ function renderHUD(dt){
   // selected
   const si=$('selInfo'), qEl=$('queue');
   if(S.sel){
-    const st=S.terr[S.sel], na=NAT[S.sel], ow=NAT[st.owner], c=cnt(st);
-    si.innerHTML=`<div class="tname">${na.flag} ${na.name}</div>
-      <div>Held by <span style="color:${ow.bright}">${ow.name}${st.owner===S.player?' (you)':''}</span>
-      ${S.battles[S.sel]?` · <span style="color:var(--accent)">⚔ under attack by ${NAT[S.battles[S.sel].atk].name}</span>`:''}</div>
-      <div class="g">🪖 ${c.army} Infantry · 🚢 ${c.navy} Fleets · ✈️ ${c.air} Air Wings</div>`;
-    if(st.owner===S.player&&st.queue.length){
+    const st=S.terr[S.sel], tm=TMETA[S.sel], ow=NAT[st.owner], c=cnt(st);
+    const mine=st.owner===S.player;
+    const capNat=tm.cap&&!NAT[tm.nation].minor?NAT[tm.nation]:null;
+    const blk=S.blockades[S.sel];
+    si.innerHTML=`<div class="tname">${tm.flag} ${tName(S.sel)}${st.monument?' 🏛':''}${tm.cap?' ★':''}</div>
+      <div>Held by <span style="color:${ow.bright}">${ow.name}${mine?' (you)':''}</span>
+      ${S.battles[S.sel]?` · <span style="color:var(--accent)">⚔ under attack by ${NAT[S.battles[S.sel].atk].name}</span>`:''}
+      ${blk?` · <span style="color:var(--sky)">⚓ blockaded by ${NAT[blk.owner].name}</span>`:''}
+      ${st.fallout>S.time?` · <span style="color:var(--gold)">☢ fallout ${Math.ceil(st.fallout-S.time)}s</span>`:''}</div>
+      ${capNat?`<div style="font-size:11px;color:var(--gold)">★ Capital: holding it grants 40% of "${capNat.spec}"</div>`:''}
+      <div class="g">🪖 ${c.army} Infantry · 🚢 ${c.navy} Fleets · ✈️ ${c.air} Air Wings</div>
+      ${mine?`<div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+        ${UKEYS.map(u=>`<button class="tbtn rep ${st.repeat===u?'on':''}" data-u="${u}" title="Auto-retrain ${UNITS[u].label} whenever the queue is empty">∞${UNITS[u].icon}</button>`).join('')}
+        ${!st.monument?`<button class="tbtn" id="monBtn" ${S.gold[S.player]<800?'disabled':''} title="+45% income here, +3% unit strength empire-wide">🏛 800</button>`:''}
+      </div>`
+      :`<div style="margin-top:7px"><button class="tbtn" id="demBtn" ${(S.tribCd[st.owner]||0)>S.time?'disabled':''}
+        title="Works if your military is 1.5× theirs — they pay gold and accept a 90s truce">💰 Demand tribute${(S.tribCd[st.owner]||0)>S.time?` (${Math.ceil(S.tribCd[st.owner]-S.time)}s)`:''}</button></div>`}`;
+    si.querySelectorAll('.rep').forEach(b=>b.addEventListener('click',()=>toggleRepeat(b.dataset.u)));
+    const mb=si.querySelector('#monBtn'); if(mb) mb.addEventListener('click',buildMonument);
+    const db=si.querySelector('#demBtn'); if(db) db.addEventListener('click',demandTribute);
+    if(mine&&st.queue.length){
       const groups=[];
       st.queue.forEach((q,i)=>{
         const g=groups[groups.length-1];
@@ -1035,27 +1399,67 @@ function renderHUD(dt){
     b.title=lvl>=3?`${UNITS[u].label} fully upgraded`:`Upgrade ${UNITS[u].label} +20% strength`;
     b.disabled=lvl>=3||S.gold[S.player]<UPG_COST[lvl];
   });
+  // nuclear arsenal
+  const nb=$('nukeBtn'), prog=S.nukeBuild[S.player], stock=S.nukes[S.player]||0;
+  nb.classList.toggle('armed',S.armNuke);
+  if(a<3){
+    nb.innerHTML=`<span class="an">☢ Nuclear Arsenal<small>Requires the Atomic Era</small></span><span class="ac">—</span>`;
+    nb.disabled=true;
+  } else if(S.armNuke){
+    nb.innerHTML=`<span class="an">☢ ARMED — SELECT TARGET<small>Click any enemy territory · Esc to stand down</small></span><span class="ac">${stock}</span>`;
+    nb.disabled=false;
+  } else if(prog){
+    nb.innerHTML=`<span class="an">☢ Warhead in assembly<small>${Math.ceil(prog.rem)}s remaining</small></span><span class="ac">${stock}</span>`;
+    nb.disabled=stock<1;
+  } else {
+    nb.innerHTML=`<span class="an">☢ Nuclear Arsenal: ${stock}<small>${stock>0?'Click to arm · ':''}Build warhead: 2,500 gold, 45s</small></span>
+      <span class="ac">${stock>0?'ARM':'2,500'}</span>`;
+    nb.disabled=stock<1&&S.gold[S.player]<2500;
+  }
   // threats
   const th=[];
+  if(S.demand)
+    th.push({tid:null,html:`<span class="tk">💰</span>
+      <span class="tt">${NAT[S.demand.from].flag} <b>${NAT[S.demand.from].name}</b> demands ${fmt(S.demand.amount)} gold
+      <small>tribute ultimatum — expires in ${Math.ceil(S.demand.until-S.time)}s</small></span>
+      <span style="display:flex;gap:4px"><button class="tbtn" id="payBtn">Pay</button><button class="tbtn" id="refBtn">Refuse</button></span>`});
   for(const c of S.convoys)
     if(c.owner!==S.player&&c.kind!=='return'&&c.kind!=='move'&&S.terr[c.to].owner===S.player)
-      th.push({tid:c.to,html:`<span class="tk">${c.kind==='strike'?'✈️':'🚀'}</span>
-        <span class="tt">${NAT[c.owner].flag} <b>${NAT[c.owner].name}</b> → ${NAT[c.to].name}
-        <small>${c.kind==='strike'?'air strike inbound':'invasion force inbound'}</small></span>
+      th.push({tid:c.to,html:`<span class="tk">${c.kind==='strike'?'✈️':c.kind==='nuke'?'☢':c.kind==='blk'?'⚓':'🚀'}</span>
+        <span class="tt">${NAT[c.owner].flag} <b>${NAT[c.owner].name}</b> → ${tName(c.to)}
+        <small>${c.kind==='strike'?'air strike inbound':c.kind==='nuke'?'NUCLEAR MISSILE INBOUND':c.kind==='blk'?'blockade fleet inbound':'invasion force inbound'}</small></span>
         <span class="eta">${Math.ceil(c.dur-c.el)}s</span>`});
   for(const tid in S.battles){
     const b=S.battles[tid];
     if(S.terr[tid].owner!==S.player) continue;
     th.push({tid,html:`<span class="tk">⚔️</span>
-      <span class="tt">${NAT[b.atk].flag} <b>${NAT[b.atk].name}</b> fighting in ${NAT[tid].name}
+      <span class="tt">${NAT[b.atk].flag} <b>${NAT[b.atk].name}</b> fighting in ${tName(tid)}
       <small>them ${Math.ceil(totalUnits(b.f))} vs you ${Math.ceil(totalUnits(S.terr[tid]))}</small></span>`});
   }
+  for(const tid in S.blockades){
+    if(S.terr[tid].owner!==S.player) continue;
+    const b=S.blockades[tid];
+    th.push({tid,html:`<span class="tk">⚓</span>
+      <span class="tt">${NAT[b.owner].flag} <b>${NAT[b.owner].name}</b> blockading ${tName(tid)}
+      <small>${Math.ceil(b.navy)} fleets offshore — income cut to 35%</small></span>`});
+  }
   $('threats').innerHTML=th.length
-    ? th.map((t,i)=>`<button class="threat" data-t="${t.tid}">${t.html}</button>`).join('')
+    ? th.map(t=>t.tid?`<button class="threat" data-t="${t.tid}">${t.html}</button>`
+                    :`<div class="threat">${t.html}</div>`).join('')
     : '<div id="noThreat">No incoming attacks. For now.</div>';
-  document.querySelectorAll('.threat').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.threat[data-t]').forEach(b=>b.addEventListener('click',()=>{
     focusTerr(b.dataset.t); S.sel=b.dataset.t; computeTargets();
   }));
+  const pb=$('payBtn'), rb=$('refBtn');
+  if(pb) pb.addEventListener('click',e=>{ e.stopPropagation(); answerDemand(true); });
+  if(rb) rb.addEventListener('click',e=>{ e.stopPropagation(); answerDemand(false); });
+  // news ticker
+  if(S.news.length&&S.time>=(S.tickAt||0)){
+    S.tickAt=S.time+4;
+    const tk=$('ticker');
+    tk.textContent=S.news.shift();
+    tk.classList.remove('hide');
+  } else if(!S.news.length&&S.time>=(S.tickAt||0)+4) $('ticker').classList.add('hide');
   // intel
   const rows=NATIONS.map(na=>({na,ct:owned(na.id).length}))
     .sort((a,b)=>b.ct-a.ct||a.na.name.localeCompare(b.na.name));
@@ -1066,7 +1470,9 @@ function renderHUD(dt){
       <span class="ict">${ct}</span></div>`).join('');
   // hint
   $('hint').textContent=S.over?'Campaign over.'
+    :S.armNuke?'☢ NUCLEAR STRIKE ARMED — click any enemy territory · Esc to stand down'
     :!S.sel?'Click one of your territories to issue orders · drag to pan · scroll to zoom'
+    :S.terr[S.sel].owner!==S.player?'Enemy sector — view intel or demand tribute from the panel'
     :'Red = invade · Gold = air strike · Blue = redeploy · click a highlighted target';
 }
 
@@ -1100,15 +1506,18 @@ function frame(now){
 }
 
 /* ============================== SAVE / LOAD ============================== */
-const SAVE_KEY='worldconquest.save.v2';
+const SAVE_KEY='worldconquest.save.v3';
 let CAN_SAVE=true;
 try{ localStorage.setItem('__wc_probe','1'); localStorage.removeItem('__wc_probe'); }
 catch(e){ CAN_SAVE=false; }
 function snapshot(){
   return JSON.stringify({
-    v:2, player:S.player, time:S.time, kills:S.kills, nemesis:S.nemesis,
+    v:3, player:S.player, time:S.time, kills:S.kills, nemesis:S.nemesis,
     gold:S.gold, age:S.age, upg:S.upg, terr:S.terr,
-    convoys:S.convoys, battles:S.battles, logs:S.logs.slice(0,15),
+    convoys:S.convoys, battles:S.battles, blockades:S.blockades, logs:S.logs.slice(0,15),
+    diff:S.diff, scen:S.scen, hostile:S.hostile, truce:S.truce, grudge:S.grudge,
+    tribCd:S.tribCd, nukes:S.nukes, nukeBuild:S.nukeBuild, minorized:S.minorized,
+    hist:S.hist.slice(-400),
   });
 }
 function flashSave(txt){
@@ -1139,7 +1548,7 @@ function importSave(){
   const code=prompt('Paste your save code:'); if(!code) return;
   try{
     const json=dec(code), d=JSON.parse(json);
-    if(d.v!==2||!NAT[d.player]||!d.terr) throw 0;
+    if(d.v!==3||!NAT[d.player]||!d.terr) throw 0;
     if(CAN_SAVE) localStorage.setItem(SAVE_KEY,json);
     refreshResume();
     startGame(d.player,d);
@@ -1149,7 +1558,7 @@ function loadSave(){
   if(!CAN_SAVE) return null;
   try{
     const d=JSON.parse(localStorage.getItem(SAVE_KEY));
-    return d&&d.v===2&&NAT[d.player]&&d.terr?d:null;
+    return d&&d.v===3&&NAT[d.player]&&d.terr?d:null;
   }catch(e){ return null; }
 }
 function refreshResume(){
@@ -1193,14 +1602,18 @@ function startGame(id,resume){
   $('game').style.display='flex';
   $('endBack').style.display='none';
   resize(); fitView();
-  newGame(id);
+  newGame(id,resume?{scen:resume.scen,diff:resume.diff}:{scen:selScen,diff:selDiff});
   if(resume){
     S.time=resume.time; S.kills=resume.kills; S.nemesis=resume.nemesis;
     S.gold=resume.gold; S.age=resume.age; S.upg=resume.upg; S.terr=resume.terr;
-    S.convoys=resume.convoys||[]; S.battles=resume.battles||{};
-    S.logs=resume.logs||[];
+    S.convoys=resume.convoys||[]; S.battles=resume.battles||{}; S.blockades=resume.blockades||{};
+    S.hostile=resume.hostile||{}; S.truce=resume.truce||{}; S.grudge=resume.grudge||{};
+    S.tribCd=resume.tribCd||{}; S.nukes=resume.nukes||{}; S.nukeBuild=resume.nukeBuild||{};
+    S.minorized=resume.minorized||null; S.hist=resume.hist||[];
+    S.logs=resume.logs||[]; S.news=[];
     for(const na of NATIONS) S.wasAlive[na.id]=aliveNow(na.id);
-    S.sel=owned(id).includes(id)?id:(owned(id)[0]||null);
+    S.sel=S.terr[CAPOF[id]]&&S.terr[CAPOF[id]].owner===id?CAPOF[id]:(owned(id)[0]||null);
+    recomputeMods();
     $('log').innerHTML=S.logs.map(l=>`<div class="e ${l.cls}">${l.text}</div>`).join('');
     logMsg('— campaign resumed —','warn');
   } else if(CAN_SAVE){
@@ -1213,8 +1626,34 @@ function startGame(id,resume){
     <b>${NAT[id].name}</b> <span class="spec">${NAT[id].spec}</span>`;
   $('pauseBtn').textContent='Pause';
   setSpeed(1);
-  focusTerr(id);
+  focusTerr(S.sel||CAPOF[id]);
   sfx('capture');
+}
+let replayTimer=null;
+function playReplay(){
+  const rcv=$('replayCv'), rc=rcv.getContext('2d');
+  const frames=S.hist.length?S.hist:[WORLD.terr.map(t=>NIDX[S.terr[t.id].owner])];
+  const sc=560/WORLD.w;
+  let i=0;
+  clearInterval(replayTimer);
+  const drawFrame=f=>{
+    rc.setTransform(1,0,0,1,0,0);
+    rc.fillStyle='#0B1A2E'; rc.fillRect(0,0,560,281);
+    rc.setTransform(sc,0,0,sc,0,(281-WORLD.h*sc)/2);
+    WORLD.terr.forEach((t,j)=>{
+      rc.fillStyle=NATIONS[f[j]]?NATIONS[f[j]].color:'#333';
+      rc.fill(paths[t.id],'evenodd');
+      rc.strokeStyle='rgba(6,12,22,.8)'; rc.lineWidth=1/sc;
+      rc.stroke(paths[t.id]);
+    });
+  };
+  const reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduced||frames.length<2){ drawFrame(frames[frames.length-1]); return; }
+  replayTimer=setInterval(()=>{
+    drawFrame(frames[i]);
+    i=(i+1)%frames.length;
+    if(i===0) drawFrame(frames[frames.length-1]);
+  },Math.max(40,Math.min(120,12000/frames.length)));
 }
 function showEnd(won){
   try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
@@ -1222,16 +1661,42 @@ function showEnd(won){
   $('endTitle').textContent=won?'Victory':'Defeat';
   $('endTitle').className=won?'v':'d';
   $('endStats').textContent=won
-    ? `The world is yours. ${S.kills} territories conquered in ${mm}m ${ss}s.`
+    ? `The world is yours. ${S.kills} territories conquered in ${mm}m ${ss}s on ${DIFFS[S.diff].label} · ${SCENS[S.scen].label}.`
     : `${NAT[S.player].name} has fallen after ${mm}m ${ss}s${S.nemesis?` — finished off by ${NAT[S.nemesis].flag} ${NAT[S.nemesis].name}`:''}. ${S.kills} territories were conquered.`;
   $('endBack').style.display='flex';
+  playReplay();
 }
 $('endRestart').addEventListener('click',()=>{
+  clearInterval(replayTimer);
   $('endBack').style.display='none';
   $('game').style.display='none';
   $('select').style.display='block';
   S=null;
   refreshResume();
+});
+/* difficulty & scenario pickers */
+function buildOptions(){
+  const dr=$('diffRow'), sr=$('scenRow');
+  for(const k in DIFFS){
+    const b=document.createElement('button');
+    b.className='ochip'+(k===selDiff?' on':''); b.textContent=DIFFS[k].label; b.dataset.k=k;
+    b.addEventListener('click',()=>{ selDiff=k; dr.querySelectorAll('.ochip').forEach(x=>x.classList.toggle('on',x===b)); });
+    dr.appendChild(b);
+  }
+  for(const k in SCENS){
+    const b=document.createElement('button');
+    b.className='ochip'+(k===selScen?' on':''); b.textContent=SCENS[k].label; b.dataset.k=k;
+    b.addEventListener('click',()=>{ selScen=k; $('scenDesc').textContent=SCENS[k].desc;
+      sr.querySelectorAll('.ochip').forEach(x=>x.classList.toggle('on',x===b)); });
+    sr.appendChild(b);
+  }
+  $('scenDesc').textContent=SCENS[selScen].desc;
+}
+buildOptions();
+$('nukeBtn').addEventListener('click',()=>{
+  if(!S) return;
+  if(S.armNuke){ S.armNuke=false; return; }
+  if((S.nukes[S.player]||0)>0) armNukeToggle(); else buyNuke();
 });
 function setSpeed(v){
   S.speed=v;
@@ -1265,7 +1730,8 @@ document.querySelectorAll('#qtyRow .qbtn').forEach(b=>b.addEventListener('click'
 window.addEventListener('keydown',e=>{
   if(!S||S.over||M) return;
   if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName)) return;
-  if(e.key===' '){ e.preventDefault(); $('pauseBtn').click(); }
+  if(e.key==='Escape'){ S.armNuke=false; S.sel=null; computeTargets(); }
+  else if(e.key===' '){ e.preventDefault(); $('pauseBtn').click(); }
   else if(e.key==='1') buildUnit('army');
   else if(e.key==='2') buildUnit('navy');
   else if(e.key==='3') buildUnit('air');

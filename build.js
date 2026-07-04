@@ -103,22 +103,72 @@ function dp(pts, eps) {
   return pts.filter((_, i) => keep[i]);
 }
 
+// ---- superpower splits: big nations become multiple conquerable regions ----
+// [regionId, lonMin, lonMax]; shiftNeg: move negative lons +360 first (Russia's Chukotka)
+const SPLITS = {
+  USA: { parts: [['uswest', -999, -100], ['useast', -100, 999]] },
+  CAN: { parts: [['canadawest', -999, -95], ['canada', -95, 999]] },
+  RUS: { parts: [['russia', -999, 60], ['siberia', 60, 105], ['fareast', 105, 999]], shiftNeg: true },
+  CHN: { parts: [['chinawest', -999, 105], ['china', 105, 999]] },
+};
+// nation + capital flags for split regions (all other territories: nation=id, cap=1)
+const REGION_NATION = {
+  uswest: ['usa', 0], useast: ['usa', 1],
+  canadawest: ['canada', 0], canada: ['canada', 1],
+  russia: ['russia', 1], siberia: ['russia', 0], fareast: ['russia', 0],
+  chinawest: ['china', 0], china: ['china', 1],
+};
+function clipHalf(ring, lon, keepWest) {
+  const inside = p => keepWest ? p[0] <= lon : p[0] >= lon;
+  const out = [];
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i], b = ring[(i + 1) % ring.length];
+    const ia = inside(a), ib = inside(b);
+    if (ia) out.push(a);
+    if (ia !== ib) {
+      const t = (lon - a[0]) / (b[0] - a[0]);
+      out.push([lon, a[1] + (b[1] - a[1]) * t]);
+    }
+  }
+  return out.length >= 4 ? out : null;
+}
+
 // ---- collect rings per territory ----
 const terr = {}; const unmapped = [];
+function addRing(tid, ring) {
+  (terr[tid] = terr[tid] || { rings: [], raw: [] }).raw.push(ring);
+}
 for (const f of G.features) {
   const iso = f.id;
   if (SKIP.has(iso)) continue;
-  const tid = MAP[iso] || NAME_MAP[f.properties && f.properties.name];
-  if (!tid) { unmapped.push(iso + ' ' + (f.properties && f.properties.name)); continue; }
+  const split = SPLITS[iso];
+  const tid = split ? null : (MAP[iso] || NAME_MAP[f.properties && f.properties.name]);
+  if (!split && !tid) { unmapped.push(iso + ' ' + (f.properties && f.properties.name)); continue; }
   const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
   for (const poly of polys) {
-    for (const ring of poly) {
+    for (let ring of poly) {
       // France: drop overseas (South America / Caribbean) rings
       if (iso === 'FRA') {
         const c = centroidOf(ring);
         if (c[0] < -20) continue;
       }
-      (terr[tid] = terr[tid] || { rings: [], raw: [] }).raw.push(ring);
+      if (!split) { addRing(tid, ring); continue; }
+      let r = ring;
+      if (split.shiftNeg) r = r.map(([x, y]) => [x < 0 ? x + 360 : x, y]);
+      for (const [rid, lo, hi] of split.parts) {
+        let c = clipHalf(r, lo, false);
+        if (c) c = clipHalf(c, hi, true);
+        if (!c) continue;
+        if (split.shiftNeg && c.some(p => p[0] > 180)) {
+          // ring reaches past the dateline: split at 180 so neither piece jumps across the map
+          const west = clipHalf(c, 180, true);
+          const east = clipHalf(c, 180, false);
+          if (west) addRing(rid, west);
+          if (east) addRing(rid, east.map(([x, y]) => [x - 360, y]));
+          continue;
+        }
+        addRing(rid, c);
+      }
     }
   }
 }
@@ -151,26 +201,31 @@ for (const tid in terr) {
   const rings = [];
   let bestA = -1, capC = null;
   for (const ring of terr[tid].raw) {
-    const a = ringArea(ring);
-    if (a > bestA) { bestA = a; capC = proj(centroidOf(ring)); }
+    let a = ringArea(ring);
+    const c0 = centroidOf(ring);
+    if (Math.abs(c0[1]) > 70) a *= 0.15;   // don't anchor labels on polar landmasses (Greenland, Arctic isles)
+    if (a > bestA) { bestA = a; capC = proj(c0); }
     if (a < 0.35 && terr[tid].raw.length > 1) continue; // drop small islets
     const simp = dp(ring, 0.15);
     if (simp.length < 4) continue;
     rings.push(simp.map(proj).map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]));
   }
   if (!rings.length || !capC) { console.log('EMPTY TERRITORY:', tid); continue; }
-  OUT.push({ id: tid, rings, cx: Math.round(capC[0]), cy: Math.round(capC[1]) });
+  const [nation, cap] = REGION_NATION[tid] || [tid, 1];
+  OUT.push({ id: tid, nation, cap, rings, cx: Math.round(capC[0]), cy: Math.round(capC[1]) });
 }
 
 // ---- manual lanes ----
 const SEA = [
-  ['usa','uk'],['usa','japan'],['usa','russia'],['usa','cuba'],['mexico','cuba'],['cuba','colombia'],
+  ['useast','uk'],['uswest','japan'],['uswest','fareast'],['useast','cuba'],['mexico','cuba'],['cuba','colombia'],
   ['canada','scandinavia'],['canada','uk'],['brazil','westafrica'],['argentina','southafrica'],
   ['uk','france'],['uk','scandinavia'],['spain','maghreb'],['italy','maghreb'],
   ['egypt','saudi'],['saudi','iran'],['saudi','eastafrica'],
-  ['japan','korea'],['japan','russia'],['indonesia','australia'],
+  ['japan','korea'],['japan','fareast'],['indonesia','australia'],['australia','southafrica'],
 ];
-const FORCE_LAND = [['russia','korea'],['egypt','levant']]; // borders too short for 110m vertex matching
+// borders too short for vertex matching + artificial meridian splits (clip lines share only 2 points)
+const FORCE_LAND = [['fareast','korea'],['egypt','levant'],
+  ['uswest','useast'],['canadawest','canada'],['russia','siberia'],['siberia','fareast'],['chinawest','china']];
 
 const key = (a,b)=>[a,b].sort().join('|');
 const landSet = new Set(landAdj.map(([a,b])=>key(a,b)));

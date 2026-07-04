@@ -6,13 +6,19 @@ A real-time world domination strategy game in a single HTML file. Pick one of 25
 
 ## Features
 
-- **Real world map** — actual country borders (Natural Earth 110m data), grouped into 39 conquerable regions, rendered on canvas with pan and zoom
-- **25 playable nations**, each with a unique specialty (Russia's Red Army, USA's Air Supremacy, China's Industrial Might, Saudi Oil Money…), plus 14 independent regions
+- **Real world map** — actual country borders (Natural Earth 110m data), grouped into 44 conquerable regions, rendered on canvas with pan and zoom. Superpowers span multiple regions (Western/Eastern US, European Russia/Siberia/Far East…) so they fall piece by piece, not in one battle
+- **25 playable nations**, each with a unique specialty, plus 14 independent regions. Capture a nation's capital ★ to gain 40% of its specialty
 - **Time-based warfare** — units train in production queues, invasion forces physically travel across the map, and battles resolve over seconds with live attrition
-- **Threats panel** — see exactly who is invading you, what's inbound, and the countdown to impact
-- **Age of Empires-style progression** — advance through three Ages (+strength, faster production, richer economy) and buy per-unit upgrades
-- **Bulk training** — ×1 / ×5 / ×10 / Max quantities, hotkeys `1` `2` `3`, space to pause
-- **Auto-save** — campaigns save to localStorage every 15s; resume from the title screen
+- **War declarations & diplomacy** — enemies declare war before invading, demand (and pay) tribute, honor truces, and hold grudges
+- **Nukes** — the Atomic Era unlocks warheads: 45s to build, strike anywhere, 75s of fallout
+- **Naval blockades** — park a fleet off an enemy coast to choke its income until they break the blockade
+- **Monuments** — build wonders for local income and empire-wide strength
+- **Threats panel & news ticker** — see exactly who is invading you and the countdown to impact
+- **Age of Empires-style progression** — three Ages plus per-unit upgrade tiers
+- **Difficulty levels and scenarios** — Standard, Cold War, Duel, and Blitz
+- **Bulk training** — ×1 / ×5 / ×10 / Max quantities, repeat production, hotkeys `1` `2` `3`, space to pause
+- **Auto-save + save codes** — resume from the title screen, or export/import a campaign as a portable code
+- **End-of-game replay** — a timelapse of the whole world changing hands
 - **1× / 2× / 4× game speed**, sound effects, touch support
 
 ## How to play
