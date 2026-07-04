@@ -1,0 +1,1274 @@
+<title>World Conquest</title>
+<style>
+  :root{
+    --bg:#0A1420; --ocean:#0B1A2E; --panel:#0F1D2E; --line:#223850;
+    --text:#D9E4F1; --dim:#8AA2BC; --faint:#5C7590;
+    --accent:#E23B3B; --gold:#F2B33D; --good:#46C08A; --sky:#5AA7E8;
+    --disp:'Avenir Next Condensed','Arial Narrow','Helvetica Neue',system-ui,sans-serif;
+    --body:system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:14px;line-height:1.45;overflow:hidden}
+  button{font-family:inherit;cursor:pointer}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  h1,h2,h3{font-family:var(--disp);letter-spacing:.08em;text-transform:uppercase;margin:0}
+
+  /* ---------- nation select ---------- */
+  #select{height:100vh;overflow-y:auto;padding:34px 30px 60px;background:
+    radial-gradient(1200px 600px at 50% -10%, #12253C 0%, var(--bg) 60%)}
+  #select .head{max-width:1100px;margin:0 auto 8px;text-align:center}
+  #select .head .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.35em;color:var(--accent);text-transform:uppercase}
+  #select h1{font-size:52px;line-height:1.05;margin:6px 0 4px}
+  #select .sub{color:var(--dim);max-width:640px;margin:0 auto 10px}
+  #howto{max-width:780px;margin:14px auto 26px;background:var(--panel);border:1px solid var(--line);
+    border-radius:6px;padding:14px 18px;font-size:13px;color:var(--dim);display:grid;gap:5px}
+  #howto b{color:var(--text);font-weight:600}
+  #cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px;max-width:1160px;margin:0 auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 14px 12px;
+    text-align:left;color:var(--text);display:flex;flex-direction:column;gap:6px;position:relative;
+    transition:transform .12s ease,border-color .12s ease}
+  .card:hover{transform:translateY(-3px);border-color:var(--gold)}
+  .card .flag{font-size:26px;line-height:1}
+  .card .nm{font-family:var(--disp);font-size:18px;letter-spacing:.05em;text-transform:uppercase}
+  .card .sp{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .card .ds{font-size:12px;color:var(--dim)}
+  .card .dot{position:absolute;top:12px;right:12px;width:10px;height:10px;border-radius:50%}
+
+  /* ---------- game shell ---------- */
+  #game{display:none;height:100vh;flex-direction:column}
+  #topbar{height:50px;flex:0 0 auto;display:flex;align-items:center;gap:20px;padding:0 14px;
+    background:var(--panel);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:13px}
+  #topbar .brand{font-family:var(--disp);font-size:17px;letter-spacing:.14em;text-transform:uppercase}
+  #topbar .me{display:flex;align-items:center;gap:8px}
+  #topbar .me .spec{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);
+    border:1px solid rgba(242,179,61,.35);border-radius:3px;padding:2px 6px}
+  .stat{display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums}
+  .stat .k{font-size:10px;letter-spacing:.2em;color:var(--faint);text-transform:uppercase}
+  .stat .v{font-size:15px}
+  .stat .v.gold{color:var(--gold)} .stat .v.good{color:var(--good)}
+  #topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .tbtn{background:none;border:1px solid var(--line);color:var(--dim);border-radius:4px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;padding:5px 9px;text-transform:uppercase}
+  .tbtn:hover{border-color:var(--dim);color:var(--text)}
+  .tbtn.on{border-color:var(--gold);color:var(--gold)}
+
+  #main{flex:1;display:flex;min-height:0}
+  #mapwrap{flex:1;position:relative;background:var(--ocean);min-width:0;overflow:hidden}
+  #cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+  #cv.dragging{cursor:grabbing}
+  #hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+    background:rgba(10,20,32,.85);border:1px solid var(--line);border-radius:4px;
+    padding:6px 14px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--dim);
+    pointer-events:none;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis}
+  #zoomctl{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px}
+  #zoomctl button{width:34px;height:34px;border-radius:5px;border:1px solid var(--line);
+    background:rgba(10,20,32,.85);color:var(--text);font-size:17px}
+  #zoomctl button:hover{border-color:var(--gold)}
+  #tip{position:absolute;pointer-events:none;background:rgba(8,16,28,.94);border:1px solid var(--line);
+    border-radius:5px;padding:8px 11px;font-size:12px;display:none;max-width:230px;z-index:10}
+  #tip .tn{font-family:var(--disp);font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+  #tip .to{font-size:11px;margin:1px 0 4px}
+  #tip .tg{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  #tip .ts{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+
+  /* ---------- sidebar ---------- */
+  #side{width:308px;flex:0 0 auto;background:var(--panel);border-left:1px solid var(--line);
+    display:flex;flex-direction:column;min-height:0;overflow-y:auto}
+  .sec{padding:11px 14px;border-bottom:1px solid var(--line)}
+  .sec h3{font-size:11px;letter-spacing:.22em;color:var(--faint);margin-bottom:8px}
+  #selInfo{font-size:12.5px;color:var(--dim)}
+  #selInfo .tname{font-family:var(--disp);font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--text)}
+  #selInfo .g{font-family:var(--mono);font-size:12px;color:var(--text);margin-top:2px}
+  #queue{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+  .qchip{position:relative;width:44px;height:34px;border:1px solid var(--line);border-radius:4px;
+    background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;overflow:hidden}
+  .qchip .qbar{position:absolute;left:0;bottom:0;height:3px;background:var(--gold)}
+  .qchip:hover{border-color:var(--accent)}
+  .brow{display:flex;flex-direction:column;gap:6px}
+  .bbtn{display:flex;align-items:center;gap:10px;width:100%;background:var(--bg);
+    border:1px solid var(--line);border-radius:5px;padding:7px 10px;color:var(--text);text-align:left}
+  .bbtn:hover:not(:disabled){border-color:var(--gold)}
+  .bbtn:disabled{opacity:.4;cursor:default}
+  .bbtn .ic{font-size:18px}
+  .bbtn .lb{flex:1;display:flex;flex-direction:column}
+  .bbtn .lb .t{font-weight:600;font-size:13px}
+  .bbtn .lb .s{font-size:10.5px;color:var(--faint)}
+  .bbtn .pr{font-family:var(--mono);font-size:12px;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums}
+  .bbtn .pr .bt{display:block;color:var(--faint);font-size:10px}
+  .qtyRow{display:flex;gap:5px;margin-bottom:7px}
+  .qbtn{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--dim);
+    font-family:var(--mono);font-size:11px;padding:4px 0}
+  .qbtn.on{border-color:var(--gold);color:var(--gold)}
+  .qbtn:hover{border-color:var(--dim)}
+  .qchip .qn{font-family:var(--mono);font-size:9px;color:var(--dim);margin-left:1px}
+  #ageBtn{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--bg);
+    border:1px solid var(--line);border-radius:5px;padding:8px 10px;color:var(--text);font-size:12.5px;margin-bottom:7px}
+  #ageBtn:hover:not(:disabled){border-color:var(--gold)}
+  #ageBtn:disabled{opacity:.45;cursor:default}
+  #ageBtn .ac{font-family:var(--mono);color:var(--gold);font-size:12px}
+  #ageBtn .an{font-weight:600}
+  #ageBtn .an small{display:block;font-weight:400;color:var(--faint);font-size:10.5px}
+  .urow{display:flex;gap:5px}
+  .ubtn{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:6px 4px;
+    color:var(--text);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:14px}
+  .ubtn .pips{font-size:8px;letter-spacing:2px;color:var(--gold)}
+  .ubtn .uc{font-family:var(--mono);font-size:10px;color:var(--dim)}
+  .ubtn:hover:not(:disabled){border-color:var(--gold)}
+  .ubtn:disabled{opacity:.45;cursor:default}
+  #resumeWrap{max-width:760px;margin:0 auto 18px;display:none}
+  #resumeBtn{width:100%;display:flex;align-items:center;gap:12px;background:rgba(242,179,61,.07);
+    border:1px solid rgba(242,179,61,.45);border-radius:6px;padding:13px 18px;color:var(--text);font-size:14px}
+  #resumeBtn:hover{border-color:var(--gold)}
+  #resumeBtn .rf{font-size:24px}
+  #resumeBtn .rt{flex:1;text-align:left}
+  #resumeBtn .rt small{display:block;color:var(--dim);font-family:var(--mono);font-size:11px}
+  #resumeBtn .go{font-family:var(--disp);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+
+  #threats{display:flex;flex-direction:column;gap:5px}
+  .threat{display:flex;align-items:center;gap:8px;background:rgba(226,59,59,.08);
+    border:1px solid rgba(226,59,59,.4);border-radius:5px;padding:6px 9px;font-size:12px;cursor:pointer;color:var(--text);text-align:left;width:100%}
+  .threat:hover{border-color:var(--accent)}
+  .threat .tk{font-size:14px}
+  .threat .tt{flex:1;line-height:1.3}
+  .threat .tt small{color:var(--dim);display:block;font-family:var(--mono);font-size:10.5px}
+  .threat .eta{font-family:var(--mono);font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums}
+  #noThreat{font-size:12px;color:var(--faint)}
+
+  #intel{overflow-y:auto;max-height:170px}
+  .irow{display:flex;align-items:center;gap:8px;padding:2px 0;font-size:12px}
+  .irow .idot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .irow .inm{flex:1;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .irow .ict{font-family:var(--mono);color:var(--text);font-variant-numeric:tabular-nums}
+  .irow.me .inm{color:var(--text);font-weight:600}
+  .irow.dead{opacity:.35}
+  .irow.dead .inm{text-decoration:line-through}
+
+  #logSec{border-bottom:none}
+  #log{max-height:150px;overflow-y:auto;font-family:var(--mono);font-size:11px;line-height:1.55;display:flex;flex-direction:column;gap:3px}
+  #log .e{color:var(--faint)}
+  #log .e.win{color:var(--good)} #log .e.loss{color:var(--accent)}
+  #log .e.warn{color:var(--gold)} #log .e.info{color:var(--dim)}
+
+  /* ---------- modal & overlays ---------- */
+  #modalBack{display:none;position:fixed;inset:0;background:rgba(4,10,18,.66);z-index:40;
+    align-items:center;justify-content:center}
+  #modal{width:344px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px}
+  #modal h2{font-size:19px;margin-bottom:2px}
+  #modal .route{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:12px}
+  .srow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .srow .si{width:22px;text-align:center;font-size:16px}
+  .srow input[type=range]{flex:1;accent-color:var(--accent)}
+  .srow .sv{font-family:var(--mono);width:56px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px}
+  #odds{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:5px;
+    padding:8px 10px;margin:6px 0 12px;color:var(--dim);display:flex;justify-content:space-between;font-variant-numeric:tabular-nums}
+  #odds .verdict{font-weight:700}
+  #modal .note{font-size:11px;color:var(--faint);margin:-4px 0 12px;min-height:14px}
+  .mbtns{display:flex;gap:8px}
+  .mbtns button{flex:1;border-radius:5px;padding:9px 0;font-family:var(--disp);font-size:14px;
+    letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--line)}
+  #mGo{background:var(--accent);border-color:var(--accent);color:#fff}
+  #mGo:hover{filter:brightness(1.12)}
+  #mGo:disabled{opacity:.4;cursor:default}
+  #mCancel{background:none;color:var(--dim)}
+  #mCancel:hover{color:var(--text)}
+
+  #endBack{display:none;position:fixed;inset:0;background:rgba(4,10,18,.85);z-index:50;
+    align-items:center;justify-content:center;text-align:center}
+  #endBox h1{font-size:64px;letter-spacing:.12em}
+  #endBox h1.v{color:var(--gold)} #endBox h1.d{color:var(--accent)}
+  #endBox p{color:var(--dim);font-family:var(--mono);font-size:13px;margin:10px 0 26px;max-width:420px}
+  #endBox button{background:var(--accent);color:#fff;border:none;border-radius:5px;padding:12px 34px;
+    font-family:var(--disp);font-size:16px;letter-spacing:.14em;text-transform:uppercase}
+  #endBox button:hover{filter:brightness(1.12)}
+
+  @media (prefers-reduced-motion:reduce){.card{transition:none}}
+  @media (max-width:900px){
+    body{overflow:auto}
+    #game{height:100vh}
+    #main{flex-direction:column}
+    #mapwrap{flex:1;min-height:46vh}
+    #side{width:100%;border-left:none;border-top:1px solid var(--line);max-height:42vh}
+    #topbar{flex-wrap:wrap;height:auto;padding:8px 12px;gap:10px}
+    #topbar .right{margin-left:0}
+  }
+</style>
+
+<div id="select">
+  <div class="head">
+    <div class="eyebrow">// Global Command Initiative //</div>
+    <h1>World Conquest</h1>
+    <p class="sub">A real world map, 39 regions, 25 great powers. Train forces, launch invasions that cross the map in real time, and watch the borders shift — until only your color remains.</p>
+  </div>
+  <div id="howto">
+    <div><b>Build</b> — select your territory and queue Infantry 🪖, Fleets 🚢, Air Wings ✈️. Training takes time; more land means more factories.</div>
+    <div><b>Attack</b> — click your territory, then a highlighted neighbor. Your force physically travels there, then the battle rages until one side breaks.</div>
+    <div><b>Defend</b> — incoming invasions show up in the Threats panel with who's attacking and where. Reinforce, or hit them back at home.</div>
+    <div><b>Advance</b> — age up your empire and buy unit upgrades to outclass older armies. Train in bulk with ×5 / ×10 / Max, or hotkeys 1 / 2 / 3.</div>
+    <div><b>Win</b> — every playable nation has a unique specialty. Paint all 39 regions your color to rule the world. Progress auto-saves.</div>
+  </div>
+  <div id="resumeWrap"><button id="resumeBtn"></button></div>
+  <div id="cards"></div>
+</div>
+
+<div id="game">
+  <div id="topbar">
+    <span class="brand">World Conquest</span>
+    <span class="me" id="meBox"></span>
+    <span class="stat"><span class="k">Gold</span><span class="v gold" id="tGold">0</span></span>
+    <span class="stat"><span class="k">Income</span><span class="v good" id="tInc">+0/s</span></span>
+    <span class="stat"><span class="k">Regions</span><span class="v" id="tTer">1/39</span></span>
+    <div class="right">
+      <span class="stat"><span class="k">T+</span><span class="v" id="tClock">00:00</span></span>
+      <button class="tbtn" id="saveBtn">Save</button>
+      <button class="tbtn on" id="sp1">1×</button>
+      <button class="tbtn" id="sp2">2×</button>
+      <button class="tbtn" id="sp4">4×</button>
+      <button class="tbtn" id="pauseBtn">Pause</button>
+    </div>
+  </div>
+  <div id="main">
+    <div id="mapwrap">
+      <canvas id="cv"></canvas>
+      <div id="tip"></div>
+      <div id="hint">Click one of your territories to issue orders · drag to pan · scroll to zoom</div>
+      <div id="zoomctl">
+        <button id="zin" aria-label="Zoom in">+</button>
+        <button id="zout" aria-label="Zoom out">−</button>
+      </div>
+    </div>
+    <div id="side">
+      <div class="sec">
+        <h3>Selected Sector</h3>
+        <div id="selInfo">No territory selected.</div>
+        <div id="queue"></div>
+      </div>
+      <div class="sec">
+        <h3>Production</h3>
+        <div class="qtyRow" id="qtyRow">
+          <button class="qbtn on" data-q="1">×1</button>
+          <button class="qbtn" data-q="5">×5</button>
+          <button class="qbtn" data-q="10">×10</button>
+          <button class="qbtn" data-q="max">Max</button>
+        </div>
+        <div class="brow" id="buildRow"></div>
+      </div>
+      <div class="sec">
+        <h3>Empire</h3>
+        <button id="ageBtn"></button>
+        <div class="urow">
+          <button class="ubtn" id="ub-army"></button>
+          <button class="ubtn" id="ub-navy"></button>
+          <button class="ubtn" id="ub-air"></button>
+        </div>
+      </div>
+      <div class="sec">
+        <h3>⚠ Threats</h3>
+        <div id="threats"></div>
+      </div>
+      <div class="sec">
+        <h3>World Intel</h3>
+        <div id="intel"></div>
+      </div>
+      <div class="sec" id="logSec">
+        <h3>Comms Log</h3>
+        <div id="log"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modalBack">
+  <div id="modal">
+    <h2 id="mTitle">Attack</h2>
+    <div class="route" id="mRoute"></div>
+    <div id="mSliders"></div>
+    <div class="note" id="mNote"></div>
+    <div id="odds"><span id="oPow"></span><span class="verdict" id="oVer"></span></div>
+    <div class="mbtns">
+      <button id="mCancel">Abort</button>
+      <button id="mGo">Launch</button>
+    </div>
+  </div>
+</div>
+
+<div id="endBack">
+  <div id="endBox">
+    <h1 id="endTitle"></h1>
+    <p id="endStats"></p>
+    <button id="endRestart">New Campaign</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================== WORLD GEOMETRY ============================== */
+const WORLD = __WORLD__;
+
+/* ============================== NATIONS ============================== */
+const UNITS = {
+  army:{label:'Infantry', icon:'🪖', cost:50,  str:10, bt:5,  sub:'Captures territory'},
+  navy:{label:'Fleet',    icon:'🚢', cost:120, str:22, bt:12, sub:'Carries troops over sea lanes'},
+  air :{label:'Air Wing', icon:'✈️', cost:150, str:24, bt:10, sub:'Strikes up to 2 lanes away'},
+};
+const UKEYS=['army','navy','air'];
+/* Age-of-Empires-style progression */
+const AGES=[null,
+  {name:'Industrial Era', cost:0},
+  {name:'Modern Era',     cost:1200},
+  {name:'Atomic Era',     cost:3200}];
+const UPG_COST=[400,900,1600];               // level 0->1, 1->2, 2->3 (+20% each)
+const ageOf=nid=>(S&&S.age[nid])||1;
+const ageStr=nid=>1+(ageOf(nid)-1)*0.18;     // +18% unit strength per age
+const btOf=(nid,u)=>UNITS[u].bt*(1-(ageOf(nid)-1)*0.15); // -15% build time per age
+const DM={army:1,navy:1,air:1,atk:1,def:1,income:1,costArmy:1,costNavy:1,costAir:1,pairArmy:false};
+const P=(id,name,flag,spec,desc,mods)=>({id,name,flag,spec,desc,minor:false,mods:Object.assign({},DM,mods)});
+const Mi=(id,name,flag)=>({id,name,flag,spec:'Independent',desc:'Unaligned regional power',minor:true,mods:Object.assign({},DM,{def:1.2})});
+const NATIONS=[
+  P('usa','United States','🇺🇸','Air Supremacy','Air Wings hit 60% harder',{air:1.6}),
+  P('canada','Canada','🇨🇦','Arctic Riches','+45% income',{income:1.45}),
+  P('mexico','Mexico','🇲🇽','Guerrilla Doctrine','Infantry cost 30% less',{costArmy:.7}),
+  P('cuba','Caribbean','🇨🇺','Revolution','Defense +40%',{def:1.4}),
+  P('brazil','Brazil','🇧🇷','Jungle Warfare','Army +20%, defense +20%',{army:1.2,def:1.2}),
+  P('argentina','Argentina','🇦🇷','Pampas Cavalry','Army +35%',{army:1.35}),
+  P('uk','United Kingdom','🇬🇧','Royal Navy','Fleets +60% strength',{navy:1.6}),
+  P('france','France','🇫🇷','Force de Frappe','Air +30%, attacks +10%',{air:1.3,atk:1.1}),
+  P('germany','Germany','🇩🇪','Blitzkrieg','Attacks +30% power',{atk:1.3}),
+  P('spain','Spain','🇪🇸','The Armada','Fleets +40% strength',{navy:1.4}),
+  P('italy','Italy','🇮🇹','Regia Marina','Navy +25%, income +15%',{navy:1.25,income:1.15}),
+  P('scandinavia','Scandinavia','🇸🇪','Viking Blood','Navy +30%, attacks +15%',{navy:1.3,atk:1.15}),
+  P('poland','Poland','🇵🇱','Winged Hussars','Army +30%, defense +15%',{army:1.3,def:1.15}),
+  P('turkey','Turkey','🇹🇷','Janissaries','Army +25%, defense +25%',{army:1.25,def:1.25}),
+  P('russia','Russia','🇷🇺','Red Army','Army +55% strength',{army:1.55}),
+  P('china','China','🇨🇳','Industrial Might','All units cost 25% less',{costArmy:.75,costNavy:.75,costAir:.75}),
+  P('india','India','🇮🇳','Endless Manpower','Infantry train 2-for-1',{pairArmy:true}),
+  P('japan','Japan','🇯🇵','Combined Fleet','Navy +35%, air +20%',{navy:1.35,air:1.2}),
+  P('korea','Korea','🇰🇷','Tech Corps','Air Wings cost 35% less',{costAir:.65}),
+  P('saudi','Saudi Arabia','🇸🇦','Oil Money','+65% income',{income:1.65}),
+  P('egypt','Egypt','🇪🇬','Suez Tolls','+30% income, fleets 20% cheaper',{income:1.3,costNavy:.8}),
+  P('nigeria','Nigeria','🇳🇬','Rising Giant','Infantry 20% cheaper, +15% income',{costArmy:.8,income:1.15}),
+  P('southafrica','Southern Africa','🇿🇦','Mineral Wealth','+35% income, defense +10%',{income:1.35,def:1.1}),
+  P('indonesia','Indonesia','🇮🇩','Straits Control','Fleets 30% cheaper, +10% income',{costNavy:.7,income:1.1}),
+  P('australia','Australia','🇦🇺','Fortress Isle','Defense +50%',{def:1.5}),
+  Mi('centralamerica','Central America','🇵🇦'), Mi('colombia','Gran Colombia','🇨🇴'),
+  Mi('andes','Andean States','🇵🇪'), Mi('easteurope','Eastern Europe','🇺🇦'),
+  Mi('balkans','Balkans','🇷🇸'), Mi('levant','The Levant','🇮🇶'), Mi('iran','Iran','🇮🇷'),
+  Mi('centralasia','Central Asia','🇰🇿'), Mi('pakistan','Pakistan','🇵🇰'),
+  Mi('seasia','Southeast Asia','🇹🇭'), Mi('maghreb','Maghreb','🇩🇿'),
+  Mi('westafrica','West Africa','🇸🇳'), Mi('centralafrica','Central Africa','🇨🇩'),
+  Mi('eastafrica','East Africa','🇪🇹'),
+];
+const NAT={};
+{
+  let pi=0, mi=0;
+  for(const na of NATIONS){
+    if(na.minor){ na.color=`hsl(${Math.round(30+mi*137.508)%360} 16% 40%)`; na.bright=`hsl(${Math.round(30+mi*137.508)%360} 18% 55%)`; mi++; }
+    else{ const h=Math.round(pi*137.508)%360; na.color=`hsl(${h} 55% 44%)`; na.bright=`hsl(${h} 65% 58%)`; pi++; }
+    NAT[na.id]=na;
+  }
+}
+const PLAYABLE=NATIONS.filter(n=>!n.minor);
+
+/* geometry lookups */
+const TG={}; WORLD.terr.forEach(t=>TG[t.id]=t);
+const ADJ={};
+WORLD.adj.forEach(([a,b,t])=>{ (ADJ[a]=ADJ[a]||[]).push({id:b,t}); (ADJ[b]=ADJ[b]||[]).push({id:a,t}); });
+const edgeType=(a,b)=>{ const e=(ADJ[a]||[]).find(x=>x.id===b); return e?e.t:null; };
+function airDists(from){
+  const d={[from]:0},q=[from];
+  while(q.length){ const c=q.shift(); if(d[c]>=2) continue;
+    for(const e of ADJ[c]) if(!(e.id in d)){ d[e.id]=d[c]+1; q.push(e.id); } }
+  return d;
+}
+const dist=(a,b)=>Math.hypot(TG[a].cx-TG[b].cx, TG[a].cy-TG[b].cy);
+
+/* ============================== STATE ============================== */
+let S=null;
+const $=id=>document.getElementById(id);
+const fmt=v=>Math.round(v).toLocaleString('en-US');
+const cnt=t=>({army:Math.round(t.army),navy:Math.round(t.navy),air:Math.round(t.air)});
+const totalUnits=f=>(f.army||0)+(f.navy||0)+(f.air||0);
+
+function newGame(playerId){
+  S={player:playerId, time:0, over:false, paused:false, speed:1, sel:playerId, hover:null,
+     targets:{}, terr:{}, gold:{}, wasAlive:{}, aiNext:{}, convoys:[], battles:{}, fx:[],
+     logs:[], kills:0, nemesis:null, age:{}, upg:{}, bq:1};
+  WORLD.terr.forEach(t=>{
+    S.age[t.id]=1; S.upg[t.id]={army:0,navy:0,air:0};
+    const minor=NAT[t.id].minor;
+    S.terr[t.id]={owner:t.id, army:minor?8+Math.floor(Math.random()*3):12, navy:minor?1:2, air:minor?1:2, queue:[]};
+    S.gold[t.id]=minor?150:350;
+    S.wasAlive[t.id]=true;
+    S.aiNext[t.id]=5+Math.random()*6;
+  });
+  logMsg(`You take command of ${NAT[playerId].flag} ${NAT[playerId].name}. Specialty: ${NAT[playerId].spec}.`,'warn');
+  logMsg('Intelligence: 24 rival powers and 14 independent regions stand between you and the world.','info');
+}
+const mods=id=>NAT[id].mods;
+const owned=nid=>Object.keys(S.terr).filter(t=>S.terr[t].owner===nid);
+const aliveNow=nid=>owned(nid).length>0;
+function unitCost(nid,u){
+  const m=mods(nid);
+  return Math.round(UNITS[u].cost*(u==='army'?m.costArmy:u==='navy'?m.costNavy:m.costAir));
+}
+function power(nid,f,mode){
+  const m=mods(nid), up=(S&&S.upg[nid])||{army:0,navy:0,air:0};
+  let p=(f.army||0)*UNITS.army.str*m.army*(1+.2*up.army)
+       +(f.navy||0)*UNITS.navy.str*m.navy*(1+.2*up.navy)
+       +(f.air||0)*UNITS.air.str*m.air*(1+.2*up.air);
+  return p*ageStr(nid)*(mode==='atk'?m.atk:m.def*1.3);
+}
+function incomeOf(nid){
+  let inc=0; for(const t of owned(nid)) inc+=8+(t===nid?10:0);
+  return inc*mods(nid).income*(1+(ageOf(nid)-1)*0.10);
+}
+
+/* ============================== SIMULATION ============================== */
+function simulate(dt){
+  S.time+=dt;
+  // economy + AI on 1s pulses
+  S.econAcc=(S.econAcc||0)+dt;
+  while(S.econAcc>=1){
+    S.econAcc-=1;
+    for(const na of NATIONS) if(aliveNow(na.id)) S.gold[na.id]+=incomeOf(na.id);
+    for(const na of NATIONS)
+      if(na.id!==S.player && aliveNow(na.id) && S.time>=S.aiNext[na.id]) aiAct(na.id);
+  }
+  // production
+  for(const tid in S.terr){
+    const t=S.terr[tid];
+    if(!t.queue.length) continue;
+    const q=t.queue[0]; q.rem-=dt;
+    if(q.rem<=0){
+      t[q.u]+=(q.u==='army'&&mods(t.owner).pairArmy)?2:1;
+      t.queue.shift();
+      if(t.owner===S.player) sfx('build');
+    }
+  }
+  // convoys
+  for(let i=S.convoys.length-1;i>=0;i--){
+    const c=S.convoys[i]; c.el+=dt;
+    if(c.el>=c.dur){ S.convoys.splice(i,1); convoyArrive(c); }
+  }
+  // battles
+  for(const tid in S.battles){
+    const b=S.battles[tid], t=S.terr[tid];
+    const A=power(b.atk,b.f,'atk'), D=power(t.owner,t,'def');
+    const defKill=A*0.012*dt, atkKill=D*0.012*0.8*dt;
+    reduceForce(t,defKill); reduceForce(b.f,atkKill);
+    if(totalUnits(t)<0.05){ // captured
+      const prev=t.owner;
+      t.owner=b.atk; t.army=Math.max(1,b.f.army); t.navy=b.f.navy; t.air=b.f.air;
+      delete S.battles[tid];
+      boom(tid, NAT[b.atk].bright);
+      if(b.atk===S.player){ S.kills++; sfx('capture'); }
+      else if(prev===S.player){ S.nemesis=b.atk; sfx('fail'); }
+      logMsg(`${NAT[b.atk].flag} ${NAT[b.atk].name} captures ${NAT[tid].name} from ${NAT[prev].flag} ${NAT[prev].name}!`,
+        b.atk===S.player?'win':prev===S.player?'loss':'info');
+      if(S.wasAlive[prev] && !aliveNow(prev)){ S.wasAlive[prev]=false; logMsg(`💀 ${NAT[prev].flag} ${NAT[prev].name} has fallen.`,'warn'); }
+      if(S.sel===tid && b.atk!==S.player && S.terr[tid].owner!==S.player) S.sel=null;
+      checkEnd();
+    } else if(totalUnits(b.f)<0.05){ // repelled
+      delete S.battles[tid];
+      logMsg(`${NAT[t.owner].flag} ${NAT[t.owner].name} repels the ${NAT[b.atk].name} assault on ${NAT[tid].name}.`,
+        b.atk===S.player?'loss':t.owner===S.player?'win':'info');
+      if(t.owner===S.player) sfx('capture');
+    }
+  }
+  // fx decay
+  for(let i=S.fx.length-1;i>=0;i--){ S.fx[i].t+=dt; if(S.fx[i].t>0.8) S.fx.splice(i,1); }
+}
+function reduceForce(f,units){
+  const tot=totalUnits(f); if(tot<=0) return;
+  const k=Math.min(1,units/tot);
+  f.army=Math.max(0,f.army-f.army*k); f.navy=Math.max(0,f.navy-f.navy*k); f.air=Math.max(0,f.air-f.air*k);
+}
+function convoyArrive(c){
+  const t=S.terr[c.to];
+  if(c.kind==='return'||c.kind==='move'){
+    if(t.owner===c.owner){ t.army+=c.f.army; t.navy+=c.f.navy; t.air+=c.f.air; }
+    else if(c.kind==='move') bounce(c);
+    else logMsg(`${NAT[c.owner].name} forces lost — ${NAT[c.to].name} fell before they returned.`,'info');
+    return;
+  }
+  if(c.kind==='strike'){
+    const A=power(c.owner,c.f,'atk'), D=power(t.owner,t,'def');
+    const kf=A+D>0?Math.min(.8,A/(A+D)*.85):0;
+    t.army-=t.army*kf; t.navy-=t.navy*kf; t.air-=t.air*kf;
+    boom(c.to,'#F2B33D'); sfx('strike');
+    logMsg(`${NAT[c.owner].flag} ${NAT[c.owner].name} air strike hits ${NAT[c.to].name} — ${Math.round(kf*100)}% of defenders destroyed.`,
+      c.owner===S.player?'win':t.owner===S.player?'loss':'info');
+    const back={owner:c.owner,from:c.to,to:c.from,f:{army:0,navy:0,air:c.f.air*.85},kind:'return',
+      el:0,dur:c.dur}; S.convoys.push(back);
+    return;
+  }
+  // attack
+  if(t.owner===c.owner){ t.army+=c.f.army; t.navy+=c.f.navy; t.air+=c.f.air; return; }
+  const b=S.battles[c.to];
+  if(b){
+    if(b.atk===c.owner){ b.f.army+=c.f.army; b.f.navy+=c.f.navy; b.f.air+=c.f.air; }
+    else bounce(c);
+    return;
+  }
+  S.battles[c.to]={atk:c.owner, f:{army:c.f.army,navy:c.f.navy,air:c.f.air}};
+  boom(c.to, NAT[c.owner].bright); sfx('shot');
+  if(t.owner===S.player) logMsg(`⚔ ${NAT[c.owner].flag} ${NAT[c.owner].name} forces have landed in ${NAT[c.to].name}!`,'loss');
+}
+function bounce(c){
+  if(S.terr[c.from] && S.terr[c.from].owner===c.owner)
+    S.convoys.push({owner:c.owner,from:c.to,to:c.from,f:c.f,kind:'return',el:0,dur:c.dur});
+}
+function launch(owner,from,to,f,kind){
+  const src=S.terr[from];
+  src.army-=f.army; src.navy-=f.navy; src.air-=f.air;
+  const d=dist(from,to), speed=kind==='strike'?130:70;
+  S.convoys.push({owner,from,to,f,kind,el:0,dur:Math.max(1.2,d/speed)});
+  if(kind!=='move' && S.terr[to].owner===S.player && owner!==S.player){
+    sfx('alarm');
+    logMsg(`⚠ ${NAT[owner].flag} ${NAT[owner].name} has launched an ${kind==='strike'?'air strike at':'invasion of'} ${NAT[to].name}! Impact in ${Math.round(Math.max(1.2,d/speed))}s.`,'warn');
+  }
+}
+function checkEnd(){
+  if(S.over) return;
+  const mine=owned(S.player).length;
+  if(mine===WORLD.terr.length){ S.over=true; sfx('win'); showEnd(true); }
+  else if(mine===0 && !S.convoys.some(c=>c.owner===S.player)){ S.over=true; sfx('fail'); showEnd(false); }
+}
+
+/* ============================== AI ============================== */
+function aiAct(nid){
+  const na=NAT[nid], m=na.mods, terrs=owned(nid);
+  S.aiNext[nid]=S.time+(na.minor?7+Math.random()*5:4+Math.random()*4);
+  if(!terrs.length) return;
+  const frontier=terrs.filter(t=>ADJ[t].some(e=>S.terr[e.id].owner!==nid));
+  const w={army:5*m.army*m.army/m.costArmy, navy:1.3*m.navy*m.navy/m.costNavy, air:na.minor?0.3:1.3*m.air*m.air/m.costAir};
+  // majors invest in ages & upgrades when flush
+  if(!na.minor){
+    const a=ageOf(nid);
+    if(a<3&&S.gold[nid]>AGES[a+1].cost+800){
+      S.gold[nid]-=AGES[a+1].cost; S.age[nid]=a+1;
+      logMsg(`${na.flag} ${na.name} advances to the ${AGES[a+1].name}.`,'info');
+    } else {
+      const pref=w.navy>w.army&&w.navy>w.air?'navy':w.air>w.army?'air':'army';
+      const lvl=S.upg[nid][pref];
+      if(lvl<3&&S.gold[nid]>UPG_COST[lvl]+900){ S.gold[nid]-=UPG_COST[lvl]; S.upg[nid][pref]=lvl+1; }
+    }
+  }
+  let spots;
+  if(na.minor){
+    spots=totalUnits(S.terr[nid])<18?[nid]:[];
+  } else {
+    // stage where the weakest enemy is next door
+    let stage=null,weakest=1e9;
+    for(const t of frontier)
+      for(const e of ADJ[t]){
+        if(S.terr[e.id].owner===nid) continue;
+        const D=power(S.terr[e.id].owner,S.terr[e.id],'def');
+        if(D<weakest){ weakest=D; stage=t; }
+      }
+    spots=stage?[stage]:terrs.slice(0,1);
+    if(frontier.length>1&&S.gold[nid]>500) spots.push(frontier[Math.floor(Math.random()*frontier.length)]);
+  }
+  for(const at of spots){
+    let guard=0;
+    const qcap=na.minor?1:3;
+    while(S.terr[at].queue.length<qcap && guard++<4){
+      const tot=w.army+w.navy+w.air; let r=Math.random()*tot, u='army';
+      if(r>w.army) u=r>w.army+w.navy?'air':'navy';
+      const c=unitCost(nid,u);
+      if(S.gold[nid]<c) break;
+      S.gold[nid]-=c;
+      const bt=btOf(nid,u);
+      S.terr[at].queue.push({u,rem:bt,total:bt});
+    }
+  }
+  // attack
+  const myConvoys=S.convoys.filter(c=>c.owner===nid&&c.kind!=='return').length;
+  if(myConvoys<3){
+    const thresh=(na.minor?2.2:Math.max(1.05,1.45-S.time*0.0012));
+    let best=null;
+    for(const t of terrs){
+      const g=S.terr[t];
+      for(const e of ADJ[t]){
+        const dt2=S.terr[e.id];
+        if(dt2.owner===nid) continue;
+        if(dt2.owner===S.player && S.time<90) continue;          // early-game grace period
+        if(na.minor && S.time<240) continue;
+        const f={army:Math.floor(g.army*.75),navy:Math.floor(g.navy*.75),air:Math.floor(g.air*.75)};
+        if(e.t==='S'&&f.navy<1) continue;
+        if(e.t==='L') f.navy=0;
+        if(f.army<1) continue;
+        const b=S.battles[e.id];
+        const defF=b&&b.atk===nid?{army:dt2.army*.5,navy:dt2.navy,air:dt2.air}:dt2;
+        const A=power(nid,f,'atk'), D=power(dt2.owner,defF,'def');
+        // early game: expand into independents first, hesitate against great powers
+        const need=(!NAT[dt2.owner].minor&&S.time<300)?thresh*1.3:thresh;
+        const ratio=A/Math.max(D,1);
+        if(ratio>need&&(!best||ratio>best.ratio)) best={src:t,dst:e.id,f,ratio};
+      }
+    }
+    if(best) launch(nid,best.src,best.dst,best.f,'attack');
+  }
+  // reinforce front
+  const interior=terrs.filter(t=>!frontier.includes(t)&&totalUnits(S.terr[t])>5);
+  for(const t of interior.slice(0,2)){
+    const fr=ADJ[t].filter(e=>S.terr[e.id].owner===nid&&frontier.includes(e.id));
+    if(!fr.length) continue;
+    const e=fr[0], g=S.terr[t];
+    const mv={army:Math.floor(g.army*.6),navy:Math.floor(g.navy*.6),air:Math.floor(g.air*.6)};
+    if(e.t==='S'&&mv.navy<1) continue;
+    if(e.t==='L') mv.navy=0;
+    if(totalUnits(mv)<1) continue;
+    launch(nid,t,e.id,mv,'move');
+  }
+}
+
+/* ============================== PLAYER ACTIONS ============================== */
+function computeTargets(){
+  S.targets={};
+  if(!S.sel||S.terr[S.sel].owner!==S.player) return;
+  const g=S.terr[S.sel];
+  for(const e of ADJ[S.sel]) S.targets[e.id]=S.terr[e.id].owner===S.player?'mov':'atk';
+  if(g.air>=1){
+    const d=airDists(S.sel);
+    for(const id in d)
+      if(d[id]===2&&S.terr[id].owner!==S.player&&!S.targets[id]) S.targets[id]='air';
+  }
+}
+function clickTerr(id){
+  if(!S||S.over) return;
+  sfx('click');
+  if(S.sel&&S.targets[id]){ openModal(S.sel,id,S.targets[id]); return; }
+  if(S.terr[id].owner===S.player) S.sel=(S.sel===id?null:id);
+  else S.sel=null;
+  computeTargets();
+}
+const QCAP=40;
+function buildUnit(u){
+  if(!S||S.over) return;
+  const t=S.sel;
+  if(!t||S.terr[t].owner!==S.player) return;
+  const c=unitCost(S.player,u);
+  const space=QCAP-S.terr[t].queue.length;
+  let n=S.bq==='max'?space:Math.min(S.bq,space);
+  n=Math.min(n,Math.floor(S.gold[S.player]/c));
+  if(n<1) return;
+  const bt=btOf(S.player,u);
+  for(let i=0;i<n;i++){ S.gold[S.player]-=c; S.terr[t].queue.push({u,rem:bt,total:bt}); }
+  sfx('click');
+}
+function buyAge(){
+  const a=ageOf(S.player);
+  if(a>=3||S.gold[S.player]<AGES[a+1].cost) return;
+  S.gold[S.player]-=AGES[a+1].cost; S.age[S.player]=a+1;
+  sfx('capture');
+  logMsg(`${NAT[S.player].flag} Your empire advances to the ${AGES[a+1].name} — stronger units, faster production, richer economy.`,'win');
+}
+function buyUpg(u){
+  const lvl=S.upg[S.player][u];
+  if(lvl>=3||S.gold[S.player]<UPG_COST[lvl]) return;
+  S.gold[S.player]-=UPG_COST[lvl]; S.upg[S.player][u]=lvl+1;
+  sfx('build');
+  logMsg(`${UNITS[u].icon} ${UNITS[u].label} upgraded to level ${lvl+1} (+${(lvl+1)*20}% strength).`,'win');
+}
+function cancelQueue(i){
+  const t=S.sel; if(!t||S.terr[t].owner!==S.player) return;
+  const q=S.terr[t].queue[i]; if(!q) return;
+  S.terr[t].queue.splice(i,1);
+  S.gold[S.player]+=unitCost(S.player,q.u);
+  sfx('click');
+}
+
+let M=null;
+function openModal(src,dst,kind){
+  const et=edgeType(src,dst), g=cnt(S.terr[src]);
+  const airOnly=kind==='air';
+  M={src,dst,kind,et,f:{army:0,navy:0,air:0},max:{
+    army:airOnly?0:g.army, navy:(et==='S')?g.navy:0, air:g.air}};
+  UKEYS.forEach(u=>M.f[u]=M.max[u]);
+  const d=dist(src,dst), tt=Math.round(Math.max(1.2,d/(airOnly?130:70)));
+  $('mTitle').textContent=kind==='mov'?'Redeploy Forces':airOnly?'Air Strike':'Invade';
+  $('mRoute').textContent=`${NAT[src].flag} ${NAT[src].name.toUpperCase()} → ${NAT[dst].flag} ${NAT[dst].name.toUpperCase()} · ${airOnly?'AIR RANGE':et==='S'?'SEA LANE':'LAND BORDER'} · ~${tt}s TRAVEL`;
+  const sl=$('mSliders'); sl.innerHTML='';
+  UKEYS.forEach(u=>{
+    if(u==='navy'&&et!=='S') return;
+    if(u==='army'&&airOnly) return;
+    const row=document.createElement('div'); row.className='srow';
+    row.innerHTML=`<span class="si">${UNITS[u].icon}</span>
+      <input type="range" min="0" max="${M.max[u]}" value="${M.f[u]}" ${M.max[u]===0?'disabled':''}>
+      <span class="sv" id="sv-${u}">${M.f[u]}/${M.max[u]}</span>`;
+    sl.appendChild(row);
+    row.querySelector('input').addEventListener('input',ev=>{
+      M.f[u]=+ev.target.value; $('sv-'+u).textContent=`${M.f[u]}/${M.max[u]}`; refreshModal();
+    });
+  });
+  S.paused=true;
+  $('modalBack').style.display='flex';
+  refreshModal();
+}
+function refreshModal(){
+  if(!M) return;
+  const isMove=M.kind==='mov';
+  const seaNeedsNavy=M.et==='S'&&M.f.army>0&&M.f.navy<1;
+  const total=M.f.army+M.f.navy+M.f.air;
+  let note='';
+  if(M.kind==='air') note='Air strikes destroy defenders but cannot capture territory.';
+  else if(seaNeedsNavy) note='Sea lane: Infantry needs at least one Fleet escort.';
+  else if(M.et==='S') note='Sea lane crossing — Fleets carry the force.';
+  if(!isMove&&M.kind!=='air'&&M.f.army===0&&total>0) note='No Infantry — the force cannot capture, only besiege.';
+  $('mNote').textContent=note;
+  if(isMove){ $('odds').style.display='none'; }
+  else{
+    $('odds').style.display='flex';
+    const A=power(S.player,M.f,'atk');
+    const D=power(S.terr[M.dst].owner,S.terr[M.dst],'def');
+    $('oPow').textContent=`⚔ ${fmt(A)} vs 🛡 ~${fmt(D)}`;
+    const r=A/Math.max(D,1), v=$('oVer');
+    if(M.kind==='air'){ v.textContent='DAMAGE ONLY'; v.style.color='var(--gold)'; }
+    else if(r>1.5){ v.textContent='LIKELY WIN'; v.style.color='var(--good)'; }
+    else if(r>1.0){ v.textContent='RISKY'; v.style.color='var(--gold)'; }
+    else{ v.textContent='SUICIDE'; v.style.color='var(--accent)'; }
+  }
+  $('mGo').textContent=isMove?'Move':M.kind==='air'?'Strike':'Launch';
+  $('mGo').disabled=total===0||seaNeedsNavy||(M.kind==='atk'&&M.f.army===0&&M.f.air===0&&M.f.navy===0);
+}
+function closeModal(){ M=null; if(S) S.paused=false; $('modalBack').style.display='none'; }
+$('mCancel').addEventListener('click',closeModal);
+$('modalBack').addEventListener('click',e=>{ if(e.target.id==='modalBack') closeModal(); });
+$('mGo').addEventListener('click',()=>{
+  if(!M) return;
+  const {src,dst,f,kind}=M;
+  launch(S.player,src,dst,f,kind==='mov'?'move':kind==='air'?'strike':'attack');
+  if(kind!=='mov') sfx('shot');
+  closeModal(); computeTargets();
+});
+
+/* ============================== VIEW / CANVAS ============================== */
+const cv=$('cv'), ctx=cv.getContext('2d');
+let view={x:0,y:0,k:0.5}, paths={}, dpr=1;
+function buildPaths(){
+  WORLD.terr.forEach(t=>{
+    const p=new Path2D();
+    for(const ring of t.rings){
+      p.moveTo(ring[0][0],ring[0][1]);
+      for(let i=1;i<ring.length;i++) p.lineTo(ring[i][0],ring[i][1]);
+      p.closePath();
+    }
+    paths[t.id]=p;
+  });
+}
+function resize(){
+  dpr=window.devicePixelRatio||1;
+  const r=cv.parentElement.getBoundingClientRect();
+  cv.width=r.width*dpr; cv.height=r.height*dpr;
+  clampView();
+}
+function fitView(){
+  const r=cv.parentElement.getBoundingClientRect();
+  view.k=Math.max(r.width/WORLD.w, (r.height)/WORLD.h)*0.98;
+  view.x=(r.width-WORLD.w*view.k)/2; view.y=(r.height-WORLD.h*view.k)/2+8;
+}
+function clampView(){
+  const r=cv.parentElement.getBoundingClientRect();
+  view.k=Math.min(4,Math.max(Math.min(r.width/WORLD.w,r.height/WORLD.h)*0.85,view.k));
+  const mw=WORLD.w*view.k, mh=WORLD.h*view.k;
+  view.x=Math.min(60,Math.max(r.width-mw-60,view.x));
+  view.y=Math.min(60,Math.max(r.height-mh-60,view.y));
+  if(mw<r.width) view.x=(r.width-mw)/2;
+  if(mh<r.height) view.y=(r.height-mh)/2;
+}
+const toMap=(sx,sy)=>[(sx-view.x)/view.k,(sy-view.y)/view.k];
+const toScreen=(mx,my)=>[mx*view.k+view.x,my*view.k+view.y];
+function hitTest(sx,sy){
+  const [mx,my]=toMap(sx,sy);
+  ctx.setTransform(1,0,0,1,0,0);
+  for(const t of WORLD.terr) if(ctx.isPointInPath(paths[t.id],mx,my,'evenodd')) return t.id;
+  return null;
+}
+
+function draw(now){
+  const r=cv.parentElement.getBoundingClientRect();
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  // ocean
+  ctx.fillStyle='#0B1A2E'; ctx.fillRect(0,0,r.width,r.height);
+  ctx.save();
+  ctx.setTransform(dpr*view.k,0,0,dpr*view.k,dpr*view.x,dpr*view.y);
+  // grid
+  ctx.strokeStyle='rgba(90,140,190,.05)'; ctx.lineWidth=1/view.k;
+  ctx.beginPath();
+  for(let x=0;x<=WORLD.w;x+=100){ ctx.moveTo(x,0); ctx.lineTo(x,WORLD.h); }
+  for(let y=0;y<=WORLD.h;y+=100){ ctx.moveTo(0,y); ctx.lineTo(WORLD.w,y); }
+  ctx.stroke();
+  // sea lanes
+  ctx.setLineDash([6/view.k,7/view.k]);
+  for(const [a,b,t] of WORLD.adj){
+    if(t!=='S') continue;
+    const hot=S&&S.sel&&(a===S.sel||b===S.sel);
+    ctx.strokeStyle=hot?'rgba(120,180,235,.55)':'rgba(90,150,210,.13)';
+    ctx.lineWidth=(hot?1.8:1.1)/view.k;
+    ctx.beginPath(); ctx.moveTo(TG[a].cx,TG[a].cy);
+    const mx=(TG[a].cx+TG[b].cx)/2, my=(TG[a].cy+TG[b].cy)/2;
+    const dx=TG[b].cx-TG[a].cx, dy=TG[b].cy-TG[a].cy, L=Math.hypot(dx,dy)||1;
+    ctx.quadraticCurveTo(mx-dy/L*L*.12,my+dx/L*L*.12,TG[b].cx,TG[b].cy); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  // territories
+  const pulse=(Math.sin(now/300)+1)/2;
+  for(const t of WORLD.terr){
+    const st=S?S.terr[t.id]:null;
+    const ownerNat=st?NAT[st.owner]:NAT[t.id];
+    ctx.fillStyle=ownerNat.color;
+    ctx.fill(paths[t.id],'evenodd');
+    if(S&&S.battles[t.id]){
+      ctx.fillStyle=`rgba(226,59,59,${0.12+pulse*0.22})`;
+      ctx.fill(paths[t.id],'evenodd');
+    }
+    if(S&&S.hover===t.id){ ctx.fillStyle='rgba(255,255,255,.10)'; ctx.fill(paths[t.id],'evenodd'); }
+    ctx.strokeStyle= st&&st.owner===(S&&S.player)?'rgba(255,255,255,.38)':'rgba(6,12,22,.85)';
+    ctx.lineWidth=(st&&st.owner===(S&&S.player)?1.6:1.1)/view.k;
+    ctx.stroke(paths[t.id]);
+  }
+  // selection / target outlines
+  if(S){
+    const oline=(tid,color,w,dash)=>{
+      ctx.strokeStyle=color; ctx.lineWidth=w/view.k;
+      ctx.setLineDash(dash?dash.map(d=>d/view.k):[]);
+      ctx.stroke(paths[tid]); ctx.setLineDash([]);
+    };
+    for(const id in S.targets){
+      const k=S.targets[id];
+      oline(id,k==='atk'?'#E23B3B':k==='mov'?'#5AA7E8':'#F2B33D',2.2,[7,5]);
+    }
+    if(S.sel) oline(S.sel,'#FFFFFF',2.6,null);
+  }
+  ctx.restore();
+
+  // ---- screen-space layer ----
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  if(!S) return;
+  // labels
+  ctx.textAlign='center';
+  for(const t of WORLD.terr){
+    const [sx,sy]=toScreen(t.cx,t.cy);
+    if(sx<-40||sy<-40||sx>r.width+40||sy>r.height+40) continue;
+    const st=S.terr[t.id], c=cnt(st), tot=c.army+c.navy+c.air;
+    ctx.font='13px system-ui';
+    ctx.fillText(NAT[t.id].flag,sx,sy-4);
+    ctx.font='600 9px '+'ui-monospace,Menlo,monospace';
+    const txt=view.k>0.85?`${c.army}·${c.navy}·${c.air}`:String(tot);
+    const tw=ctx.measureText(txt).width+8;
+    ctx.fillStyle='rgba(6,13,22,.75)';
+    ctx.beginPath(); ctx.roundRect(sx-tw/2,sy+1,tw,12,3); ctx.fill();
+    ctx.fillStyle=st.owner===S.player?'#9EE8C3':'#CFE0F2';
+    ctx.fillText(txt,sx,sy+10);
+    if(view.k>0.85){
+      ctx.font='600 8.5px ui-monospace,Menlo,monospace';
+      ctx.fillStyle='rgba(190,210,230,.75)';
+      ctx.fillText(NAT[t.id].name.toUpperCase(),sx,sy+22);
+    }
+    if(st.queue.length&&st.owner===S.player){
+      ctx.font='9px system-ui'; ctx.fillStyle='#F2B33D';
+      ctx.fillText('⚙ '+st.queue.length,sx,sy-16);
+    }
+  }
+  // battles
+  const pulse2=(Math.sin(now/200)+1)/2;
+  for(const tid in S.battles){
+    const b=S.battles[tid], [sx,sy]=toScreen(TG[tid].cx,TG[tid].cy);
+    ctx.strokeStyle=`rgba(226,59,59,${.5+pulse2*.5})`; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(sx,sy-4,13+pulse2*4,0,7); ctx.stroke();
+    ctx.font='15px system-ui'; ctx.fillText('⚔️',sx,sy-24);
+    ctx.font='600 9px ui-monospace,Menlo,monospace'; ctx.fillStyle='#FF8F8F';
+    ctx.fillText(`${Math.ceil(totalUnits(b.f))} vs ${Math.ceil(totalUnits(S.terr[tid]))}`,sx,sy-36);
+  }
+  // convoys
+  for(const c of S.convoys){
+    const p=c.el/c.dur;
+    const x1=TG[c.from].cx,y1=TG[c.from].cy,x2=TG[c.to].cx,y2=TG[c.to].cy;
+    const [sx,sy]=toScreen(x1+(x2-x1)*p,y1+(y2-y1)*p);
+    const [ox,oy]=toScreen(x1,y1);
+    const col=NAT[c.owner].bright;
+    ctx.strokeStyle=col; ctx.globalAlpha=.3; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(sx,sy); ctx.stroke();
+    ctx.globalAlpha=1;
+    const threat=c.owner!==S.player&&S.terr[c.to].owner===S.player&&c.kind!=='return';
+    if(threat){
+      ctx.strokeStyle=`rgba(226,59,59,${.4+pulse2*.6})`; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(sx,sy,9+pulse2*3,0,7); ctx.stroke();
+    }
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(sx,sy,5,0,7); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.font='10px system-ui';
+    ctx.fillText(c.kind==='strike'?'✈️':c.kind==='move'||c.kind==='return'?'➜':'⚔️',sx,sy-8);
+  }
+  // fx
+  for(const f of S.fx){
+    const [sx,sy]=toScreen(f.x,f.y), pr=f.t/0.8;
+    ctx.strokeStyle=f.col; ctx.globalAlpha=1-pr; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(sx,sy,6+pr*30,0,7); ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+}
+function boom(tid,col){ S.fx.push({x:TG[tid].cx,y:TG[tid].cy,t:0,col}); }
+
+/* ---- pointer interaction ---- */
+let drag=null, moved=false;
+cv.addEventListener('mousedown',e=>{ drag={sx:e.clientX,sy:e.clientY,vx:view.x,vy:view.y}; moved=false; });
+window.addEventListener('mousemove',e=>{
+  const rect=cv.getBoundingClientRect();
+  if(drag){
+    const dx=e.clientX-drag.sx, dy=e.clientY-drag.sy;
+    if(Math.abs(dx)+Math.abs(dy)>5) moved=true;
+    if(moved){ view.x=drag.vx+dx; view.y=drag.vy+dy; clampView(); cv.classList.add('dragging'); }
+  }
+  if(!S) return;
+  const id=hitTest(e.clientX-rect.left,e.clientY-rect.top);
+  S.hover=id;
+  const tip=$('tip');
+  if(id&&!drag){
+    const st=S.terr[id], na=NAT[id], ow=NAT[st.owner], c=cnt(st);
+    const b=S.battles[id];
+    tip.style.display='block';
+    tip.style.left=Math.min(rect.width-240,e.clientX-rect.left+14)+'px';
+    tip.style.top=Math.min(rect.height-120,e.clientY-rect.top+12)+'px';
+    tip.innerHTML=`<div class="tn">${na.flag} ${na.name}</div>
+      <div class="to" style="color:${ow.bright}">Held by ${ow.name}${st.owner===S.player?' (you)':''}</div>
+      <div class="tg">🪖 ${c.army} · 🚢 ${c.navy} · ✈️ ${c.air}${st.queue.length?` · ⚙ ${st.queue.length} in production`:''}</div>
+      ${b?`<div class="ts">⚔ Under attack by ${NAT[b.atk].name}</div>`:''}
+      ${!NAT[id].minor?`<div class="ts">${NAT[id].spec}</div>`:''}`;
+  } else tip.style.display='none';
+});
+window.addEventListener('mouseup',e=>{
+  cv.classList.remove('dragging');
+  if(drag&&!moved){
+    const rect=cv.getBoundingClientRect();
+    const id=hitTest(e.clientX-rect.left,e.clientY-rect.top);
+    if(id) clickTerr(id);
+    else if(S){ S.sel=null; computeTargets(); }
+  }
+  drag=null;
+});
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const rect=cv.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const f=Math.exp(-e.deltaY*0.0013);
+  const [wx,wy]=toMap(mx,my);
+  view.k*=f;
+  view.x=mx-wx*view.k; view.y=my-wy*view.k;
+  clampView();
+},{passive:false});
+$('zin').addEventListener('click',()=>{ view.k*=1.35; clampView(); });
+$('zout').addEventListener('click',()=>{ view.k/=1.35; clampView(); });
+function focusTerr(tid){
+  const r=cv.parentElement.getBoundingClientRect();
+  view.k=Math.max(view.k,1.1);
+  view.x=r.width/2-TG[tid].cx*view.k;
+  view.y=r.height/2-TG[tid].cy*view.k;
+  clampView();
+}
+
+/* ============================== HUD ============================== */
+function logMsg(text,cls){
+  S.logs.unshift({text,cls});
+  if(S.logs.length>40) S.logs.pop();
+  $('log').innerHTML=S.logs.map(l=>`<div class="e ${l.cls}">${l.text}</div>`).join('');
+}
+let hudAcc=0;
+function renderHUD(dt){
+  hudAcc+=dt; if(hudAcc<0.25) return; hudAcc=0;
+  $('tGold').textContent=fmt(S.gold[S.player]);
+  $('tInc').textContent='+'+fmt(incomeOf(S.player))+'/s';
+  $('tTer').textContent=owned(S.player).length+'/'+WORLD.terr.length;
+  const tt=Math.floor(S.time);
+  $('tClock').textContent=String(Math.floor(tt/60)).padStart(2,'0')+':'+String(tt%60).padStart(2,'0');
+  // selected
+  const si=$('selInfo'), qEl=$('queue');
+  if(S.sel){
+    const st=S.terr[S.sel], na=NAT[S.sel], ow=NAT[st.owner], c=cnt(st);
+    si.innerHTML=`<div class="tname">${na.flag} ${na.name}</div>
+      <div>Held by <span style="color:${ow.bright}">${ow.name}${st.owner===S.player?' (you)':''}</span>
+      ${S.battles[S.sel]?` · <span style="color:var(--accent)">⚔ under attack by ${NAT[S.battles[S.sel].atk].name}</span>`:''}</div>
+      <div class="g">🪖 ${c.army} Infantry · 🚢 ${c.navy} Fleets · ✈️ ${c.air} Air Wings</div>`;
+    if(st.owner===S.player&&st.queue.length){
+      const groups=[];
+      st.queue.forEach((q,i)=>{
+        const g=groups[groups.length-1];
+        if(g&&g.u===q.u){ g.n++; g.last=i; } else groups.push({u:q.u,n:1,first:i,last:i});
+      });
+      qEl.innerHTML=groups.map(g=>
+        `<button class="qchip" data-i="${g.last}" title="Click to cancel one (refund)">${UNITS[g.u].icon}${g.n>1?`<span class="qn">×${g.n}</span>`:''}
+          <span class="qbar" style="width:${g.first===0?(1-st.queue[0].rem/st.queue[0].total)*100:0}%"></span></button>`).join('');
+      qEl.querySelectorAll('.qchip').forEach(b=>b.addEventListener('click',()=>cancelQueue(+b.dataset.i)));
+    } else qEl.innerHTML='';
+  } else { si.textContent='No territory selected.'; qEl.innerHTML=''; }
+  // build buttons
+  UKEYS.forEach(u=>{
+    const b=$('bb-'+u); if(!b) return;
+    const c=unitCost(S.player,u);
+    b.querySelector('.pr').innerHTML=`${fmt(c)}<span class="bt">${btOf(S.player,u).toFixed(1).replace('.0','')}s</span>`;
+    b.disabled=S.over||!S.sel||S.terr[S.sel].owner!==S.player||S.gold[S.player]<c||S.terr[S.sel].queue.length>=QCAP;
+  });
+  // empire panel
+  const a=ageOf(S.player), ab=$('ageBtn');
+  if(a<3){
+    ab.innerHTML=`<span class="an">Age ${'I'.repeat(a)} — ${AGES[a].name}<small>Advance: +18% strength · −15% build time · +10% income</small></span>
+      <span class="ac">${fmt(AGES[a+1].cost)}</span>`;
+    ab.disabled=S.gold[S.player]<AGES[a+1].cost;
+  } else {
+    ab.innerHTML=`<span class="an">Age III — ${AGES[3].name}<small>Maximum age reached</small></span><span class="ac">MAX</span>`;
+    ab.disabled=true;
+  }
+  UKEYS.forEach(u=>{
+    const b=$('ub-'+u), lvl=S.upg[S.player][u];
+    b.innerHTML=`${UNITS[u].icon}<span class="pips">${'●'.repeat(lvl)}${'○'.repeat(3-lvl)}</span>
+      <span class="uc">${lvl>=3?'MAX':fmt(UPG_COST[lvl])}</span>`;
+    b.title=lvl>=3?`${UNITS[u].label} fully upgraded`:`Upgrade ${UNITS[u].label} +20% strength`;
+    b.disabled=lvl>=3||S.gold[S.player]<UPG_COST[lvl];
+  });
+  // threats
+  const th=[];
+  for(const c of S.convoys)
+    if(c.owner!==S.player&&c.kind!=='return'&&c.kind!=='move'&&S.terr[c.to].owner===S.player)
+      th.push({tid:c.to,html:`<span class="tk">${c.kind==='strike'?'✈️':'🚀'}</span>
+        <span class="tt">${NAT[c.owner].flag} <b>${NAT[c.owner].name}</b> → ${NAT[c.to].name}
+        <small>${c.kind==='strike'?'air strike inbound':'invasion force inbound'}</small></span>
+        <span class="eta">${Math.ceil(c.dur-c.el)}s</span>`});
+  for(const tid in S.battles){
+    const b=S.battles[tid];
+    if(S.terr[tid].owner!==S.player) continue;
+    th.push({tid,html:`<span class="tk">⚔️</span>
+      <span class="tt">${NAT[b.atk].flag} <b>${NAT[b.atk].name}</b> fighting in ${NAT[tid].name}
+      <small>them ${Math.ceil(totalUnits(b.f))} vs you ${Math.ceil(totalUnits(S.terr[tid]))}</small></span>`});
+  }
+  $('threats').innerHTML=th.length
+    ? th.map((t,i)=>`<button class="threat" data-t="${t.tid}">${t.html}</button>`).join('')
+    : '<div id="noThreat">No incoming attacks. For now.</div>';
+  document.querySelectorAll('.threat').forEach(b=>b.addEventListener('click',()=>{
+    focusTerr(b.dataset.t); S.sel=b.dataset.t; computeTargets();
+  }));
+  // intel
+  const rows=NATIONS.map(na=>({na,ct:owned(na.id).length}))
+    .sort((a,b)=>b.ct-a.ct||a.na.name.localeCompare(b.na.name));
+  $('intel').innerHTML=rows.map(({na,ct})=>
+    `<div class="irow ${na.id===S.player?'me':''} ${ct?'':'dead'}">
+      <span class="idot" style="background:${na.bright}"></span>
+      <span class="inm">${na.flag} ${na.name}</span>
+      <span class="ict">${ct}</span></div>`).join('');
+  // hint
+  $('hint').textContent=S.over?'Campaign over.'
+    :!S.sel?'Click one of your territories to issue orders · drag to pan · scroll to zoom'
+    :'Red = invade · Gold = air strike · Blue = redeploy · click a highlighted target';
+}
+
+/* ============================== SOUND ============================== */
+let AC=null;
+function sfx(kind){
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended') AC.resume();
+    const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();
+    o.connect(g); g.connect(AC.destination);
+    const Pz={click:[660,.04,'square',.025],build:[520,.09,'triangle',.05],shot:[180,.18,'sawtooth',.05],
+      strike:[120,.25,'sawtooth',.06],fail:[140,.3,'square',.05],capture:[523,.12,'triangle',.06],
+      win:[784,.5,'triangle',.08],alarm:[880,.35,'square',.05]}[kind]||[440,.05,'sine',.03];
+    o.type=Pz[2]; o.frequency.setValueAtTime(Pz[0],t);
+    if(kind==='capture'||kind==='win') o.frequency.setValueAtTime(Pz[0]*1.5,t+Pz[1]*.5);
+    if(kind==='alarm'){ o.frequency.setValueAtTime(660,t+.12); o.frequency.setValueAtTime(880,t+.24); }
+    if(kind==='shot'||kind==='strike'||kind==='fail') o.frequency.exponentialRampToValueAtTime(40,t+Pz[1]);
+    g.gain.setValueAtTime(Pz[3],t); g.gain.exponentialRampToValueAtTime(.0001,t+Pz[1]+.05);
+    o.start(t); o.stop(t+Pz[1]+.1);
+  }catch(e){}
+}
+
+/* ============================== MAIN LOOP ============================== */
+let last=performance.now();
+function frame(now){
+  const raw=Math.min(0.1,(now-last)/1000); last=now;
+  if(S&&!S.over&&!S.paused) simulate(raw*S.speed);
+  if(S){ draw(now); renderHUD(raw); }
+  requestAnimationFrame(frame);
+}
+
+/* ============================== SAVE / LOAD ============================== */
+const SAVE_KEY='worldconquest.save.v2';
+function saveGame(manual){
+  if(!S||S.over) return;
+  try{
+    localStorage.setItem(SAVE_KEY,JSON.stringify({
+      v:2, player:S.player, time:S.time, kills:S.kills, nemesis:S.nemesis,
+      gold:S.gold, age:S.age, upg:S.upg, terr:S.terr,
+      convoys:S.convoys, battles:S.battles, logs:S.logs.slice(0,15),
+    }));
+    if(manual){
+      const b=$('saveBtn'); b.textContent='Saved ✓';
+      setTimeout(()=>{ b.textContent='Save'; },1200);
+    }
+  }catch(e){}
+}
+function loadSave(){
+  try{
+    const d=JSON.parse(localStorage.getItem(SAVE_KEY));
+    return d&&d.v===2&&NAT[d.player]&&d.terr?d:null;
+  }catch(e){ return null; }
+}
+function refreshResume(){
+  const d=loadSave(), w=$('resumeWrap');
+  if(!d){ w.style.display='none'; return; }
+  const ct=Object.values(d.terr).filter(t=>t.owner===d.player).length;
+  const mm=String(Math.floor(d.time/60)).padStart(2,'0'), ss=String(Math.floor(d.time%60)).padStart(2,'0');
+  w.style.display='block';
+  $('resumeBtn').innerHTML=`<span class="rf">${NAT[d.player].flag}</span>
+    <span class="rt">Resume your campaign as <b>${NAT[d.player].name}</b>
+    <small>T+${mm}:${ss} · ${ct}/${WORLD.terr.length} regions held · Age ${'I'.repeat(d.age[d.player]||1)}</small></span>
+    <span class="go">Resume ▸</span>`;
+}
+function resumeGame(){
+  const d=loadSave(); if(!d) return;
+  startGame(d.player,d);
+}
+setInterval(()=>saveGame(false),15000);
+window.addEventListener('pagehide',()=>saveGame(false));
+$('saveBtn').addEventListener('click',()=>saveGame(true));
+$('resumeBtn').addEventListener('click',resumeGame);
+
+/* ============================== SCREENS ============================== */
+function buildSelect(){
+  $('cards').innerHTML='';
+  PLAYABLE.forEach(na=>{
+    const c=document.createElement('button');
+    c.className='card';
+    c.innerHTML=`<span class="dot" style="background:${na.bright}"></span>
+      <span class="flag">${na.flag}</span><span class="nm">${na.name}</span>
+      <span class="sp">${na.spec}</span><span class="ds">${na.desc}</span>`;
+    c.addEventListener('click',()=>startGame(na.id));
+    $('cards').appendChild(c);
+  });
+}
+function startGame(id,resume){
+  $('select').style.display='none';
+  $('game').style.display='flex';
+  $('endBack').style.display='none';
+  resize(); fitView();
+  newGame(id);
+  if(resume){
+    S.time=resume.time; S.kills=resume.kills; S.nemesis=resume.nemesis;
+    S.gold=resume.gold; S.age=resume.age; S.upg=resume.upg; S.terr=resume.terr;
+    S.convoys=resume.convoys||[]; S.battles=resume.battles||{};
+    S.logs=resume.logs||[];
+    for(const na of NATIONS) S.wasAlive[na.id]=aliveNow(na.id);
+    S.sel=owned(id).includes(id)?id:(owned(id)[0]||null);
+    $('log').innerHTML=S.logs.map(l=>`<div class="e ${l.cls}">${l.text}</div>`).join('');
+    logMsg('— campaign resumed —','warn');
+  }
+  computeTargets();
+  $('meBox').innerHTML=`<span style="font-size:17px">${NAT[id].flag}</span>
+    <b>${NAT[id].name}</b> <span class="spec">${NAT[id].spec}</span>`;
+  $('pauseBtn').textContent='Pause';
+  setSpeed(1);
+  focusTerr(id);
+  sfx('capture');
+}
+function showEnd(won){
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  const mm=Math.floor(S.time/60), ss=Math.floor(S.time%60);
+  $('endTitle').textContent=won?'Victory':'Defeat';
+  $('endTitle').className=won?'v':'d';
+  $('endStats').textContent=won
+    ? `The world is yours. ${S.kills} territories conquered in ${mm}m ${ss}s.`
+    : `${NAT[S.player].name} has fallen after ${mm}m ${ss}s${S.nemesis?` — finished off by ${NAT[S.nemesis].flag} ${NAT[S.nemesis].name}`:''}. ${S.kills} territories were conquered.`;
+  $('endBack').style.display='flex';
+}
+$('endRestart').addEventListener('click',()=>{
+  $('endBack').style.display='none';
+  $('game').style.display='none';
+  $('select').style.display='block';
+  S=null;
+  refreshResume();
+});
+function setSpeed(v){
+  S.speed=v;
+  [['sp1',1],['sp2',2],['sp4',4]].forEach(([id,s])=>$(id).classList.toggle('on',s===v));
+}
+$('sp1').addEventListener('click',()=>S&&setSpeed(1));
+$('sp2').addEventListener('click',()=>S&&setSpeed(2));
+$('sp4').addEventListener('click',()=>S&&setSpeed(4));
+$('pauseBtn').addEventListener('click',()=>{
+  if(!S||S.over) return;
+  S.paused=!S.paused;
+  $('pauseBtn').textContent=S.paused?'Resume':'Pause';
+});
+window.addEventListener('resize',()=>{ resize(); });
+
+$('buildRow').innerHTML=UKEYS.map((u,i)=>`
+  <button class="bbtn" id="bb-${u}">
+    <span class="ic">${UNITS[u].icon}</span>
+    <span class="lb"><span class="t">${UNITS[u].label} <span style="color:var(--faint);font-size:10px">[${i+1}]</span></span><span class="s">${UNITS[u].sub}</span></span>
+    <span class="pr"></span>
+  </button>`).join('');
+UKEYS.forEach(u=>$('bb-'+u).addEventListener('click',()=>buildUnit(u)));
+UKEYS.forEach(u=>$('ub-'+u).addEventListener('click',()=>buyUpg(u)));
+$('ageBtn').addEventListener('click',buyAge);
+document.querySelectorAll('#qtyRow .qbtn').forEach(b=>b.addEventListener('click',()=>{
+  if(S) S.bq=b.dataset.q==='max'?'max':+b.dataset.q;
+  document.querySelectorAll('#qtyRow .qbtn').forEach(x=>x.classList.toggle('on',x===b));
+}));
+
+/* hotkeys: 1/2/3 train units at current qty, space pauses */
+window.addEventListener('keydown',e=>{
+  if(!S||S.over||M) return;
+  if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if(e.key===' '){ e.preventDefault(); $('pauseBtn').click(); }
+  else if(e.key==='1') buildUnit('army');
+  else if(e.key==='2') buildUnit('navy');
+  else if(e.key==='3') buildUnit('air');
+});
+
+/* basic touch: one-finger pan/tap, two-finger pinch zoom */
+let touch=null;
+cv.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(e.touches.length===1){
+    const t=e.touches[0];
+    touch={mode:'pan',sx:t.clientX,sy:t.clientY,vx:view.x,vy:view.y,moved:false};
+  } else if(e.touches.length===2){
+    const [a,b]=e.touches;
+    touch={mode:'pinch',d0:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),k0:view.k,
+      cx:(a.clientX+b.clientX)/2,cy:(a.clientY+b.clientY)/2,moved:true};
+  }
+},{passive:false});
+cv.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(!touch) return;
+  if(touch.mode==='pan'&&e.touches.length===1){
+    const t=e.touches[0], dx=t.clientX-touch.sx, dy=t.clientY-touch.sy;
+    if(Math.abs(dx)+Math.abs(dy)>8) touch.moved=true;
+    if(touch.moved){ view.x=touch.vx+dx; view.y=touch.vy+dy; clampView(); }
+  } else if(touch.mode==='pinch'&&e.touches.length===2){
+    const [a,b]=e.touches;
+    const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    const rect=cv.getBoundingClientRect();
+    const mx=touch.cx-rect.left,my=touch.cy-rect.top;
+    const [wx,wy]=toMap(mx,my);
+    view.k=touch.k0*d/touch.d0;
+    view.x=mx-wx*view.k; view.y=my-wy*view.k;
+    clampView();
+  }
+},{passive:false});
+cv.addEventListener('touchend',e=>{
+  if(touch&&touch.mode==='pan'&&!touch.moved){
+    const rect=cv.getBoundingClientRect();
+    const id=hitTest(touch.sx-rect.left,touch.sy-rect.top);
+    if(id) clickTerr(id);
+    else if(S){ S.sel=null; computeTargets(); }
+  }
+  if(e.touches.length===0) touch=null;
+});
+
+buildPaths();
+buildSelect();
+refreshResume();
+resize();
+requestAnimationFrame(frame);
+</script>
